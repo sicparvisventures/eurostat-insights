@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Eurostat Insights — design tokens
+   Editorial, restrained, flat. No gradients anywhere.
+   Monochrome ink primary + muted categorical accents.
+--------------------------------------------------------------------------- */
+:root {
+  --background: oklch(0.985 0.002 95);
+  --foreground: oklch(0.24 0.008 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.008 260);
+
+  --muted: oklch(0.955 0.004 95);
+  --muted-foreground: oklch(0.52 0.012 260);
+
+  /* Ink primary — confident, editorial, not a colour wash */
+  --primary: oklch(0.27 0.012 260);
+  --primary-foreground: oklch(0.98 0.002 95);
+
+  --accent: oklch(0.94 0.006 250);
+  --accent-foreground: oklch(0.3 0.02 260);
+
+  --success: oklch(0.52 0.11 150);
+  --warning: oklch(0.62 0.12 70);
+  --danger: oklch(0.52 0.16 25);
+
+  --border: oklch(0.9 0.005 260);
+  --input: oklch(0.9 0.005 260);
+  --ring: oklch(0.27 0.012 260);
+
+  --radius: 0.7rem;
+
+  /* Single data colour for neutral charts + muted categorical set */
+  --chart-1: oklch(0.48 0.09 245);
+  --chart-2: oklch(0.5 0.08 175);
+  --chart-3: oklch(0.55 0.1 145);
+  --chart-4: oklch(0.58 0.1 70);
+  --chart-5: oklch(0.52 0.13 30);
+  --chart-6: oklch(0.45 0.09 300);
+}
+
+.dark {
+  --background: oklch(0.19 0.008 260);
+  --foreground: oklch(0.94 0.004 95);
+
+  --card: oklch(0.225 0.009 260);
+  --card-foreground: oklch(0.94 0.004 95);
+
+  --muted: oklch(0.27 0.01 260);
+  --muted-foreground: oklch(0.66 0.012 260);
+
+  --primary: oklch(0.95 0.004 95);
+  --primary-foreground: oklch(0.22 0.01 260);
+
+  --accent: oklch(0.3 0.015 260);
+  --accent-foreground: oklch(0.9 0.01 95);
+
+  --success: oklch(0.7 0.12 150);
+  --warning: oklch(0.78 0.12 70);
+  --danger: oklch(0.66 0.15 25);
+
+  --border: oklch(0.31 0.012 260);
+  --input: oklch(0.31 0.012 260);
+  --ring: oklch(0.95 0.004 95);
+
+  --chart-1: oklch(0.66 0.11 245);
+  --chart-2: oklch(0.68 0.09 175);
+  --chart-3: oklch(0.7 0.11 145);
+  --chart-4: oklch(0.74 0.11 70);
+  --chart-5: oklch(0.68 0.14 30);
+  --chart-6: oklch(0.66 0.11 300);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+  ::selection {
+    background: var(--color-accent);
+  }
+}
+
+/* Safe-area helpers for installed PWA / notch devices */
+@utility pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+}
+@utility pt-safe {
+  padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+}
+@utility min-h-dvh {
+  min-height: 100dvh;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Flat skeleton — opacity pulse, no moving gradient */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.skeleton {
+  background: var(--color-muted);
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
