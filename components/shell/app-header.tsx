@@ -10,9 +10,16 @@ interface AppHeaderProps {
   subtitle?: string;
   back?: boolean;
   action?: React.ReactNode;
+  homeHref?: string;
 }
 
-export function AppHeader({ title, subtitle, back, action }: AppHeaderProps) {
+export function AppHeader({
+  title,
+  subtitle,
+  back,
+  action,
+  homeHref = "/home",
+}: AppHeaderProps) {
   const router = useRouter();
 
   return (
@@ -27,7 +34,7 @@ export function AppHeader({ title, subtitle, back, action }: AppHeaderProps) {
             <Icon name="ChevronLeft" className="size-5" />
           </button>
         ) : (
-          <Link href="/home" aria-label="Home">
+          <Link href={homeHref} aria-label="Home">
             <Logo size={34} />
           </Link>
         )}
