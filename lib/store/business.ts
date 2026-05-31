@@ -31,6 +31,10 @@ export interface BusinessProfile {
   seats: number;
   terraceSeats: number;
   averageTicket: number;
+  dailyBudget: number;
+  districtCode: string;
+  targetStaffHoursPer1000: number;
+  laborHourCost: number;
   delivery: boolean;
   chainMode: "single" | "multi";
   goals: ForecastGoal[];
@@ -58,6 +62,10 @@ const DEFAULT_PROFILE: BusinessProfile = {
   seats: 48,
   terraceSeats: 16,
   averageTicket: 32,
+  dailyBudget: 14289,
+  districtCode: "Gent district",
+  targetStaffHoursPer1000: 12.5,
+  laborHourCost: 23.5,
   delivery: true,
   chainMode: "single",
   goals: ["covers", "staff", "stock"],

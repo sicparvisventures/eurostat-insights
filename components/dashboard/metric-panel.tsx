@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMetricSeries } from "@/lib/hooks/use-eurostat";
 import { timeSeries } from "@/lib/eurostat/jsonstat";
 import { formatMetricValue, type Metric } from "@/lib/eurostat/registry";
 import { countryName } from "@/lib/eurostat/constants";
+import type { DataRange } from "@/lib/date-range";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { DeltaBadge, periodLabel } from "@/components/charts/delta-badge";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { ChartSkeleton, EmptyState, ErrorState } from "@/components/charts/states";
@@ -13,17 +17,19 @@ export function MetricPanel({
   metric,
   country,
   periods = 16,
+  range,
   color = "var(--color-chart-1)",
 }: {
   metric: Metric;
   country: string;
   periods?: number;
+  range?: DataRange;
   color?: string;
 }) {
   const { data, isLoading, isError, refetch } = useMetricSeries(
     metric,
     country,
-    periods,
+    range ?? periods,
   );
   const series = data ? timeSeries(data, metric.filters) : [];
   const latest = series.at(-1);
@@ -38,6 +44,12 @@ export function MetricPanel({
             {countryName(country)} · {metric.description}
           </p>
         </div>
+        <Button asChild size="sm" variant="ghost" className="-mr-2 -mt-2">
+          <Link href={`/dataset/${metric.datasetCode}`}>
+            <Icon name="ArrowUpRight" />
+            Details
+          </Link>
+        </Button>
       </div>
 
       {isLoading ? (

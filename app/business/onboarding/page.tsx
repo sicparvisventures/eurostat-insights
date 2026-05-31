@@ -286,6 +286,14 @@ function StepLocation({
               className="field-input"
             />
           </Field>
+          <Field label="District">
+            <input
+              value={profile.districtCode}
+              onChange={(e) => updateProfile({ districtCode: e.target.value })}
+              placeholder="Gent district"
+              className="field-input"
+            />
+          </Field>
           <Field label="Country code">
             <input
               value={profile.country}
@@ -344,6 +352,25 @@ function StepCapacity({
           label="Avg. ticket"
           value={profile.averageTicket}
           onChange={(averageTicket) => updateProfile({ averageTicket })}
+          prefix="EUR"
+        />
+        <NumberField
+          label="Daily budget"
+          value={profile.dailyBudget}
+          onChange={(dailyBudget) => updateProfile({ dailyBudget })}
+          prefix="EUR"
+        />
+        <NumberField
+          label="Staff h / EUR 1k"
+          value={profile.targetStaffHoursPer1000}
+          onChange={(targetStaffHoursPer1000) =>
+            updateProfile({ targetStaffHoursPer1000 })
+          }
+        />
+        <NumberField
+          label="Labor EUR / h"
+          value={profile.laborHourCost}
+          onChange={(laborHourCost) => updateProfile({ laborHourCost })}
           prefix="EUR"
         />
         <Field label="Chain mode">

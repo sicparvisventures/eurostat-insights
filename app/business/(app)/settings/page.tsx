@@ -58,6 +58,18 @@ export default function BusinessSettingsPage() {
               </label>
               <label className="block">
                 <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                  District
+                </span>
+                <input
+                  value={profile.districtCode}
+                  onChange={(e) =>
+                    updateProfile({ districtCode: e.target.value })
+                  }
+                  className="field-input"
+                />
+              </label>
+              <label className="block">
+                <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
                   Country
                 </span>
                 <input
@@ -69,6 +81,30 @@ export default function BusinessSettingsPage() {
                   className="field-input uppercase"
                 />
               </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <NumberSetting
+                label="Daily budget"
+                value={profile.dailyBudget}
+                onChange={(dailyBudget) => updateProfile({ dailyBudget })}
+              />
+              <NumberSetting
+                label="Avg. ticket"
+                value={profile.averageTicket}
+                onChange={(averageTicket) => updateProfile({ averageTicket })}
+              />
+              <NumberSetting
+                label="Staff h / EUR 1k"
+                value={profile.targetStaffHoursPer1000}
+                onChange={(targetStaffHoursPer1000) =>
+                  updateProfile({ targetStaffHoursPer1000 })
+                }
+              />
+              <NumberSetting
+                label="Labor EUR / h"
+                value={profile.laborHourCost}
+                onChange={(laborHourCost) => updateProfile({ laborHourCost })}
+              />
             </div>
           </Card>
         </section>
@@ -100,5 +136,30 @@ export default function BusinessSettingsPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function NumberSetting({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+        {label}
+      </span>
+      <input
+        type="number"
+        value={value}
+        min={0}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="field-input"
+      />
+    </label>
   );
 }

@@ -7,6 +7,11 @@ import {
   type FetchParams,
 } from "@/lib/eurostat/client";
 import type { Metric } from "@/lib/eurostat/registry";
+import {
+  DEFAULT_DATA_RANGE,
+  rangeToFetchParams,
+  type DataRange,
+} from "@/lib/date-range";
 
 /** Generic dataset query. */
 export function useDataset(params: FetchParams, enabled = true) {
@@ -18,12 +23,21 @@ export function useDataset(params: FetchParams, enabled = true) {
 }
 
 /** Time series of a metric for a single country (last N periods). */
-export function useMetricSeries(metric: Metric, geo: string, periods = 16) {
+export function useMetricSeries(
+  metric: Metric,
+  geo: string,
+  range: DataRange | number = DEFAULT_DATA_RANGE,
+) {
+  const timeParams =
+    typeof range === "number"
+      ? { lastTimePeriod: range }
+      : rangeToFetchParams(range, metric.frequency);
+
   return useDataset({
     dataset: metric.datasetCode,
     filters: metric.filters,
     geo,
-    lastTimePeriod: periods,
+    ...timeParams,
   });
 }
 
@@ -32,10 +46,18 @@ export function useMetricSeries(metric: Metric, geo: string, periods = 16) {
  * Fetches several periods so we can pick the latest *non-null* value per
  * country — monthly tourism series often lag by a month or two.
  */
-export function useMetricByCountry(metric: Metric, periods = 8) {
+export function useMetricByCountry(
+  metric: Metric,
+  range: DataRange | number = 8,
+) {
+  const timeParams =
+    typeof range === "number"
+      ? { lastTimePeriod: range }
+      : rangeToFetchParams(range, metric.frequency);
+
   return useDataset({
     dataset: metric.datasetCode,
     filters: metric.filters,
-    lastTimePeriod: periods,
+    ...timeParams,
   });
 }

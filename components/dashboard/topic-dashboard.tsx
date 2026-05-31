@@ -9,22 +9,17 @@ import { StatCard } from "@/components/charts/stat-card";
 import { MetricPanel } from "@/components/dashboard/metric-panel";
 import { MetricCompare } from "@/components/dashboard/metric-compare";
 import { Card } from "@/components/ui/card";
-import { Segmented } from "@/components/ui/segmented";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Icon } from "@/components/ui/icon";
 import { TOPIC_BY_SLUG } from "@/lib/eurostat/registry";
 import { usePersonalization } from "@/lib/store/personalization";
+import { DEFAULT_DATA_RANGE, type DataRange } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
-
-const RANGES = [
-  { value: "8", label: "Recent" },
-  { value: "16", label: "Trend" },
-  { value: "30", label: "Long" },
-];
 
 export function TopicDashboard({ slug }: { slug: string }) {
   const topic = TOPIC_BY_SLUG.get(slug);
   const { country, setCountry } = usePersonalization();
-  const [periods, setPeriods] = useState("16");
+  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
   const [compareMetricId, setCompareMetricId] = useState(
     topic?.metrics[0]?.id ?? "",
   );
@@ -67,6 +62,15 @@ export function TopicDashboard({ slug }: { slug: string }) {
 
       <div className="space-y-7 px-5">
         <CountryChips value={country} onChange={setCountry} />
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">Analysis window</p>
+            <p className="text-muted-foreground text-xs">
+              Applies to trends and map comparisons.
+            </p>
+          </div>
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
 
         {/* KPI grid */}
         <div className="grid grid-cols-2 gap-3">
@@ -107,6 +111,7 @@ export function TopicDashboard({ slug }: { slug: string }) {
               metric={compareMetric}
               selected={country}
               onSelectCountry={setCountry}
+              range={range}
             />
           </Card>
         </section>
@@ -118,11 +123,7 @@ export function TopicDashboard({ slug }: { slug: string }) {
               <Icon name="LineChart" className="text-primary size-4" />
               <h2 className="font-semibold tracking-tight">Trends over time</h2>
             </div>
-            <Segmented
-              options={RANGES}
-              value={periods}
-              onChange={setPeriods}
-            />
+            <DateRangePicker value={range} onChange={setRange} />
           </div>
           <div className="space-y-4">
             {topic.metrics.map((m) => (
@@ -130,7 +131,7 @@ export function TopicDashboard({ slug }: { slug: string }) {
                 key={m.id}
                 metric={m}
                 country={country}
-                periods={Number(periods)}
+                range={range}
                 color={topic.accent}
               />
             ))}

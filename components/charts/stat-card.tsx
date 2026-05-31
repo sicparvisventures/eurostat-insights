@@ -7,6 +7,7 @@ import {
   formatMetricValue,
   type Metric,
 } from "@/lib/eurostat/registry";
+import type { DataRange } from "@/lib/date-range";
 import { countryName } from "@/lib/eurostat/constants";
 import { Sparkline } from "./sparkline";
 import { DeltaBadge } from "./delta-badge";
@@ -20,14 +21,20 @@ export function StatCard({
   href,
   className,
   color = "var(--color-chart-1)",
+  range,
 }: {
   metric: Metric;
   country: string;
   href?: string;
   className?: string;
   color?: string;
+  range?: DataRange;
 }) {
-  const { data, isLoading, isError } = useMetricSeries(metric, country, 16);
+  const { data, isLoading, isError } = useMetricSeries(
+    metric,
+    country,
+    range ?? 16,
+  );
   const series = data ? timeSeries(data, metric.filters) : [];
   const latest = series.at(-1);
   const prev = series.at(-2);

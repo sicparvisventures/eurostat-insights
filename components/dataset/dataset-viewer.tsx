@@ -8,6 +8,7 @@ import { CountryChips } from "@/components/country-chips";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Icon } from "@/components/ui/icon";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { EuropeChoropleth } from "@/components/charts/europe-choropleth";
@@ -17,8 +18,13 @@ import {
   EmptyState,
   ErrorState,
 } from "@/components/charts/states";
-import { EU_COUNTRY_CODES } from "@/lib/eurostat/constants";
+import { EU_AGGREGATE, EU_COUNTRY_CODES } from "@/lib/eurostat/constants";
 import { usePersonalization } from "@/lib/store/personalization";
+import {
+  DEFAULT_DATA_RANGE,
+  rangeToFetchParams,
+  type DataRange,
+} from "@/lib/date-range";
 
 /** Heuristic value formatter based on the dataset's unit label. */
 function makeFormatter(unit: string | null) {
@@ -49,12 +55,55 @@ function toCsv(rows: { time: string; value: number }[], label: string): string {
   return `${header}\n${body}`;
 }
 
+function hasZeroSizedDimension(ds: Dataset | undefined) {
+  return Boolean(ds?.size.some((size) => size === 0));
+}
+
+function countryCandidate(geo: string) {
+  return geo === EU_AGGREGATE.code ? "BE" : geo;
+}
+
+function nuts2Candidate(geo: string) {
+  const country = countryCandidate(geo);
+  if (country.length !== 2) return country;
+  return `${country}10`;
+}
+
 export function DatasetViewer({ code }: { code: string }) {
   const { country } = usePersonalization();
   const [geo, setGeo] = useState(country);
+  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
+  const countryGeo = countryCandidate(geo);
+  const regionalGeo = nuts2Candidate(geo);
 
   // Snapshot: latest period across all geos + dim combos (structure + map data).
-  const snapshot = useDataset({ dataset: code, lastTimePeriod: 1 });
+  const countrySnapshot = useDataset({
+    dataset: code,
+    geo: countryGeo,
+    lastTimePeriod: 1,
+  });
+  const shouldTryRegional =
+    countrySnapshot.isError || hasZeroSizedDimension(countrySnapshot.data);
+  const regionalSnapshot = useDataset(
+    {
+      dataset: code,
+      geo: regionalGeo,
+      lastTimePeriod: 1,
+    },
+    shouldTryRegional && regionalGeo !== countryGeo,
+  );
+  const snapshot =
+    shouldTryRegional && regionalSnapshot.data
+      ? regionalSnapshot
+      : countrySnapshot;
+  const effectiveGeo =
+    shouldTryRegional && regionalSnapshot.data ? regionalGeo : countryGeo;
+  const isLoading =
+    countrySnapshot.isLoading ||
+    (shouldTryRegional && regionalGeo !== countryGeo && regionalSnapshot.isLoading);
+  const isError =
+    countrySnapshot.isError &&
+    (!shouldTryRegional || regionalSnapshot.isError || regionalGeo === countryGeo);
 
   return (
     <div>
@@ -64,13 +113,13 @@ export function DatasetViewer({ code }: { code: string }) {
         back
       />
       <div className="space-y-6 px-5 pt-2">
-        {snapshot.isLoading ? (
+        {isLoading ? (
           <ChartSkeleton height={280} />
-        ) : snapshot.isError ? (
+        ) : isError ? (
           <Card className="p-5">
             <ErrorState onRetry={() => snapshot.refetch()} />
             <p className="text-muted-foreground mt-2 text-center text-xs">
-              Some datasets are too large to load directly.{" "}
+              This dataset may need narrower dimensions or a regional code.{" "}
               <a
                 className="text-primary underline"
                 href={`https://ec.europa.eu/eurostat/databrowser/view/${code}/default/table`}
@@ -83,10 +132,14 @@ export function DatasetViewer({ code }: { code: string }) {
           </Card>
         ) : snapshot.data ? (
           <DatasetBody
+            key={`${code}-${effectiveGeo}-${snapshot.data.updated ?? "latest"}`}
             code={code}
             snapshot={snapshot.data}
             geo={geo}
+            effectiveGeo={effectiveGeo}
             setGeo={setGeo}
+            range={range}
+            setRange={setRange}
           />
         ) : (
           <EmptyState />
@@ -100,12 +153,18 @@ function DatasetBody({
   code,
   snapshot,
   geo,
+  effectiveGeo,
   setGeo,
+  range,
+  setRange,
 }: {
   code: string;
   snapshot: Dataset;
   geo: string;
+  effectiveGeo: string;
   setGeo: (g: string) => void;
+  range: DataRange;
+  setRange: (range: DataRange) => void;
 }) {
   const unit = unitLabel(snapshot);
   const fmt = useMemo(() => makeFormatter(unit), [unit]);
@@ -132,8 +191,8 @@ function DatasetBody({
     {
       dataset: code,
       filters: selection,
-      geo,
-      lastTimePeriod: 40,
+      geo: effectiveGeo,
+      ...rangeToFetchParams(range),
     },
     hasTime,
   );
@@ -167,7 +226,7 @@ function DatasetBody({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${code}_${geo}.csv`;
+    a.download = `${code}_${effectiveGeo}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -177,6 +236,16 @@ function DatasetBody({
       {unit && (
         <p className="text-muted-foreground -mt-2 text-sm">Unit: {unit}</p>
       )}
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">Data range</p>
+          <p className="text-muted-foreground text-xs">
+            Used for the trend and recent data table.
+          </p>
+        </div>
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
 
       {/* dimension selectors */}
       {selectableDims.length > 0 && (
@@ -197,7 +266,17 @@ function DatasetBody({
       )}
 
       {/* geo selector */}
-      {hasGeo && <CountryChips value={geo} onChange={setGeo} />}
+      {hasGeo && (
+        <div className="space-y-2">
+          <CountryChips value={geo} onChange={setGeo} />
+          {effectiveGeo !== countryCandidate(geo) && (
+            <p className="text-muted-foreground px-1 text-xs">
+              This dataset is regional; using {effectiveGeo} as the default
+              NUTS 2 location.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* time series */}
       {hasTime && (

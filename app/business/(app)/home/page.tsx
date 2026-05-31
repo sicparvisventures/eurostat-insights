@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { AppHeader } from "@/components/shell/app-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Icon } from "@/components/ui/icon";
 import {
   BusinessScoreCard,
@@ -18,10 +20,16 @@ import {
   HOTSPOT_ESTIMATES,
   SOURCE_HEALTH,
 } from "@/lib/business/signals";
+import {
+  DISTRICT_KPIS,
+  LOCATION_KPIS,
+} from "@/lib/business/restaurant-kpis";
 import { useBusinessStore } from "@/lib/store/business";
+import { DEFAULT_DATA_RANGE, type DataRange } from "@/lib/date-range";
 
 export default function BusinessHomePage() {
   const profile = useBusinessStore((state) => state.profile);
+  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
   const dinner = DAYPART_FORECASTS.find((item) => item.id === "dinner");
   const sourceIssues = SOURCE_HEALTH.filter(
     (item) => item.status !== "ok",
@@ -37,6 +45,16 @@ export default function BusinessHomePage() {
       />
 
       <div className="space-y-7 px-5 pt-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">Planning window</p>
+            <p className="text-muted-foreground text-xs">
+              Used for KPI review and forecast context.
+            </p>
+          </div>
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
@@ -66,6 +84,29 @@ export default function BusinessHomePage() {
               label="Conf."
               value={`${dinner?.confidence ?? 82}%`}
             />
+          </div>
+        </section>
+
+        <section>
+          <SectionTitle icon="Euro" title="Restaurant KPIs" />
+          <div className="grid grid-cols-2 gap-3">
+            {[...LOCATION_KPIS.slice(0, 4), ...DISTRICT_KPIS.slice(0, 2)].map(
+              (kpi) => (
+                <Card key={kpi.id} className="p-4">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {kpi.label}
+                  </p>
+                  <p className="mt-3 text-xl font-bold tracking-tight">
+                    {kpi.value}
+                  </p>
+                  {kpi.delta && (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {kpi.delta}
+                    </p>
+                  )}
+                </Card>
+              ),
+            )}
           </div>
         </section>
 

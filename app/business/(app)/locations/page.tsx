@@ -33,6 +33,9 @@ export default function BusinessLocationsPage() {
                   {profile.address || "Address not set"} · {profile.city},{" "}
                   {profile.country}
                 </p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  District: {profile.districtCode}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -44,6 +47,18 @@ export default function BusinessLocationsPage() {
               <LocationMetric
                 label="Ticket"
                 value={`EUR ${profile.averageTicket}`}
+              />
+              <LocationMetric
+                label="Budget"
+                value={`EUR ${profile.dailyBudget.toLocaleString("en-GB")}`}
+              />
+              <LocationMetric
+                label="Staff target"
+                value={`${profile.targetStaffHoursPer1000}h`}
+              />
+              <LocationMetric
+                label="Labor"
+                value={`EUR ${profile.laborHourCost}/h`}
               />
             </div>
           </Card>

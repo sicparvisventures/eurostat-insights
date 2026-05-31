@@ -39,8 +39,18 @@ export async function GET(request: Request) {
     });
 
     if (!res.ok) {
+      let detail = `Eurostat returned ${res.status}`;
+      try {
+        const body = await res.json();
+        const upstreamError = Array.isArray(body?.error)
+          ? body.error[0]?.label
+          : body?.error;
+        if (typeof upstreamError === "string") detail = upstreamError;
+      } catch {
+        // Keep the status-based fallback if Eurostat does not return JSON.
+      }
       return NextResponse.json(
-        { error: `Eurostat returned ${res.status}` },
+        { error: detail },
         { status: res.status === 404 ? 404 : 502 },
       );
     }

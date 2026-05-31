@@ -5,6 +5,7 @@ import { useMetricByCountry } from "@/lib/hooks/use-eurostat";
 import { timeSeries } from "@/lib/eurostat/jsonstat";
 import { formatMetricValue, type Metric } from "@/lib/eurostat/registry";
 import { EU_COUNTRY_CODES } from "@/lib/eurostat/constants";
+import type { DataRange } from "@/lib/date-range";
 import { EuropeChoropleth } from "@/components/charts/europe-choropleth";
 import { ComparisonBarChart } from "@/components/charts/comparison-bar-chart";
 import { ChartSkeleton, EmptyState, ErrorState } from "@/components/charts/states";
@@ -13,12 +14,17 @@ export function MetricCompare({
   metric,
   selected,
   onSelectCountry,
+  range,
 }: {
   metric: Metric;
   selected: string;
   onSelectCountry: (code: string) => void;
+  range?: DataRange;
 }) {
-  const { data, isLoading, isError, refetch } = useMetricByCountry(metric);
+  const { data, isLoading, isError, refetch } = useMetricByCountry(
+    metric,
+    range ?? 8,
+  );
 
   const { values, bars, time } = useMemo(() => {
     if (!data) return { values: new Map<string, number>(), bars: [], time: "" };

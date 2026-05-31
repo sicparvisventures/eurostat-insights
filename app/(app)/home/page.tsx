@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { AppHeader } from "@/components/shell/app-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CountryChips } from "@/components/country-chips";
 import { StatCard } from "@/components/charts/stat-card";
 import { MetricPanel } from "@/components/dashboard/metric-panel";
 import { Icon } from "@/components/ui/icon";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   TOPIC_BY_SLUG,
   ALL_METRICS,
@@ -14,6 +16,7 @@ import {
 } from "@/lib/eurostat/registry";
 import { usePersonalization } from "@/lib/store/personalization";
 import { countryName } from "@/lib/eurostat/constants";
+import { DEFAULT_DATA_RANGE, type DataRange } from "@/lib/date-range";
 
 function greeting() {
   const h = new Date().getHours();
@@ -31,6 +34,7 @@ function spotlightMetric() {
 export default function HomePage() {
   const { name, interests, country, setCountry, favorites } =
     usePersonalization();
+  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
   const spotlight = spotlightMetric();
   const spotlightAccent =
     TOPIC_BY_SLUG.get(spotlight.topicSlug)?.accent ?? "var(--color-chart-1)";
@@ -54,6 +58,15 @@ export default function HomePage() {
 
       <div className="space-y-7 px-5 pt-2">
         <CountryChips value={country} onChange={setCountry} />
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">Data range</p>
+            <p className="text-muted-foreground text-xs">
+              Controls the visible trend cards.
+            </p>
+          </div>
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
 
         {/* Spotlight */}
         <section>
@@ -66,6 +79,7 @@ export default function HomePage() {
             metric={spotlight}
             country={country}
             color={spotlightAccent}
+            range={range}
           />
         </section>
 
@@ -82,11 +96,12 @@ export default function HomePage() {
                     key={m.id}
                     metric={m}
                     country={country}
-                    href={`/topics/${m.topicSlug}`}
+                    href={`/dataset/${m.datasetCode}`}
                     color={
                       TOPIC_BY_SLUG.get(m.topicSlug)?.accent ??
                       "var(--color-chart-1)"
                     }
+                    range={range}
                   />
                 ))}
             </div>
@@ -107,9 +122,10 @@ export default function HomePage() {
                   key={m.id}
                   metric={m}
                   country={country}
-                  href={`/topics/${topic.slug}`}
+                  href={`/dataset/${m.datasetCode}`}
                   className="w-56 shrink-0"
                   color={topic.accent}
+                  range={range}
                 />
               ))}
             </div>

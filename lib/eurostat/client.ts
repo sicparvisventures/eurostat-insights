@@ -10,6 +10,10 @@ export interface FetchParams {
   time?: string;
   /** Return only the last N time periods. */
   lastTimePeriod?: number;
+  /** Return periods since this Eurostat time code, e.g. 2024, 2024-Q1 or 2024-01. */
+  sinceTimePeriod?: string;
+  /** Return periods until this Eurostat time code, e.g. 2025, 2025-Q4 or 2025-12. */
+  untilTimePeriod?: string;
 }
 
 export function buildDataUrl(params: FetchParams): string {
@@ -29,6 +33,8 @@ export function buildDataUrl(params: FetchParams): string {
   if (params.lastTimePeriod) {
     sp.set("lastTimePeriod", String(params.lastTimePeriod));
   }
+  if (params.sinceTimePeriod) sp.set("sinceTimePeriod", params.sinceTimePeriod);
+  if (params.untilTimePeriod) sp.set("untilTimePeriod", params.untilTimePeriod);
   return `/api/eurostat/data?${sp.toString()}`;
 }
 
