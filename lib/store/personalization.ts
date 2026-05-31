@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -64,13 +64,10 @@ export const usePersonalization = create<PersonalizationState>()(
 
 /** Avoids hydration mismatch: returns false until the store has hydrated. */
 export function useHasHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    const unsub = usePersonalization.persist.onFinishHydration(() =>
-      setHydrated(true),
-    );
-    setHydrated(usePersonalization.persist.hasHydrated());
-    return unsub;
-  }, []);
-  return hydrated;
+  return useSyncExternalStore(
+    (onStoreChange) =>
+      usePersonalization.persist.onFinishHydration(onStoreChange),
+    () => usePersonalization.persist.hasHydrated(),
+    () => false,
+  );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/shell/app-header";
 import { Icon } from "@/components/ui/icon";
@@ -20,9 +21,21 @@ export default function TopicsPage() {
             href={`/topics/${t.slug}`}
             className="group block overflow-hidden rounded-2xl border border-border transition-colors hover:border-foreground/20 active:scale-[0.995]"
           >
-            <div className="relative p-5 text-white" style={{ background: t.accent }}>
-              <div className="mb-8 flex items-start justify-between">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-white/15">
+            <div className="relative min-h-48 overflow-hidden p-5 text-white">
+              <Image
+                src={t.image}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, 640px"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-black/45" />
+              <div
+                className="absolute inset-0 opacity-35"
+                style={{ background: t.accent }}
+              />
+              <div className="relative mb-8 flex items-start justify-between">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
                   <Icon name={t.icon} className="size-5" />
                 </div>
                 <Icon
@@ -30,8 +43,12 @@ export default function TopicsPage() {
                   className="size-5 text-white/70 transition-transform group-hover:translate-x-0.5"
                 />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight">{t.title}</h2>
-              <p className="mt-1 text-sm text-white/85">{t.description}</p>
+              <h2 className="relative text-lg font-semibold tracking-tight">
+                {t.title}
+              </h2>
+              <p className="relative mt-1 text-sm text-white/90">
+                {t.description}
+              </p>
             </div>
             <div className="bg-card flex flex-wrap gap-1.5 p-3">
               {t.metrics.map((m) => (

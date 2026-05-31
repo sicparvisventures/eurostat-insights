@@ -36,6 +36,8 @@ export interface Topic {
   icon: string; // lucide icon name
   /** Single solid accent colour (no gradients anywhere in the app). */
   accent: string;
+  /** Hero/card photo (in /public/topics). */
+  image: string;
   metrics: Metric[];
 }
 
@@ -48,6 +50,7 @@ export const TOPICS: Topic[] = [
       "How many we are, how long we live, and how our societies are changing.",
     icon: "Users",
     accent: "#3f5a8a",
+    image: "/topics/population.jpg",
     metrics: [
       {
         id: "population",
@@ -110,6 +113,7 @@ export const TOPICS: Topic[] = [
       "Growth, jobs and prices — the indicators that shape everyday life.",
     icon: "TrendingUp",
     accent: "#2f6e52",
+    image: "/topics/economy.jpg",
     metrics: [
       {
         id: "gdp",
@@ -179,6 +183,7 @@ export const TOPICS: Topic[] = [
       "Connectivity, research and the technologies driving the future.",
     icon: "Wifi",
     accent: "#9a6a2e",
+    image: "/topics/digital.jpg",
     metrics: [
       {
         id: "internet-use",
@@ -229,6 +234,7 @@ export const TOPICS: Topic[] = [
       "Demand, occupancy and capacity across Europe's hotels and tourist accommodation — for operators and analysts.",
     icon: "BedDouble",
     accent: "#a14a3a",
+    image: "/topics/hospitality.jpg",
     metrics: [
       {
         id: "nights-spent",
@@ -278,6 +284,44 @@ export const TOPICS: Topic[] = [
         format: "compact",
         frequency: "A",
         trend: "neutral",
+      },
+      {
+        id: "fnb-turnover",
+        datasetCode: "sts_setu_m",
+        title: "Food & beverage turnover",
+        short: "F&B turnover",
+        description:
+          "Turnover of restaurants, bars and catering (index, 2021 = 100).",
+        filters: {
+          indic_bt: "NETTUR",
+          nace_r2: "I56",
+          s_adj: "SCA",
+          unit: "I21",
+        },
+        unit: "index (2021=100)",
+        format: "decimal",
+        decimals: 1,
+        frequency: "M",
+        trend: "up-good",
+      },
+      {
+        id: "accommodation-turnover",
+        datasetCode: "sts_setu_m",
+        title: "Accommodation turnover",
+        short: "Accom. turnover",
+        description:
+          "Turnover of accommodation services (index, 2021 = 100).",
+        filters: {
+          indic_bt: "NETTUR",
+          nace_r2: "I55",
+          s_adj: "SCA",
+          unit: "I21",
+        },
+        unit: "index (2021=100)",
+        format: "decimal",
+        decimals: 1,
+        frequency: "M",
+        trend: "up-good",
       },
     ],
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/shell/app-header";
 import { CountryChips } from "@/components/country-chips";
@@ -39,15 +40,29 @@ export function TopicDashboard({ slug }: { slug: string }) {
 
       {/* hero band */}
       <div
-        className="mx-5 mb-5 rounded-2xl p-5 text-white"
-        style={{ background: topic.accent }}
+        className="relative mx-5 mb-5 min-h-52 overflow-hidden rounded-2xl p-5 text-white"
       >
-        <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-white/15">
-          <Icon name={topic.icon} className="size-5" />
+        <Image
+          src={topic.image}
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 640px"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black/45" />
+        <div
+          className="absolute inset-0 opacity-35"
+          style={{ background: topic.accent }}
+        />
+        <div className="relative flex h-full min-h-40 flex-col justify-between">
+          <div className="mb-12 flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+            <Icon name={topic.icon} className="size-5" />
+          </div>
+          <p className="max-w-md text-sm leading-relaxed text-white/90">
+            {topic.description}
+          </p>
         </div>
-        <p className="text-sm leading-relaxed text-white/90">
-          {topic.description}
-        </p>
       </div>
 
       <div className="space-y-7 px-5">

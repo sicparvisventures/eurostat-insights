@@ -4,8 +4,9 @@ import { parseToc, searchCatalog } from "@/lib/eurostat/catalog";
 const TOC_URL =
   "https://ec.europa.eu/eurostat/api/dissemination/catalogue/toc/txt?lang=EN";
 
-// Catalogue changes rarely — cache for a day.
-export const revalidate = 86400;
+// The upstream TOC is larger than Next's data-cache item limit, so the fetch
+// stays uncached and the route response carries the shared-cache policy.
+const CATALOG_S_MAXAGE = 86400;
 
 /**
  * Search the Eurostat catalogue.
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
   const limit = Math.min(Number(searchParams.get("limit")) || 60, 120);
 
   try {
-    const res = await fetch(TOC_URL, { next: { revalidate } });
+    const res = await fetch(TOC_URL, { cache: "no-store" });
     if (!res.ok) {
       return NextResponse.json(
         { error: `Catalogue unavailable (${res.status})` },
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     return NextResponse.json(data, {
       headers: {
         "Cache-Control":
-          "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800",
+          `public, max-age=0, s-maxage=${CATALOG_S_MAXAGE}, stale-while-revalidate=604800`,
       },
     });
   } catch {

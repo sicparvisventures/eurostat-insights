@@ -12,10 +12,13 @@ export function SplashScreen() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(SESSION_KEY)) return;
-    setVisible(true);
     sessionStorage.setItem(SESSION_KEY, "1");
-    const t = setTimeout(() => setVisible(false), 1500);
-    return () => clearTimeout(t);
+    const showTimer = window.setTimeout(() => setVisible(true), 0);
+    const hideTimer = window.setTimeout(() => setVisible(false), 1500);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
   }, []);
 
   return (

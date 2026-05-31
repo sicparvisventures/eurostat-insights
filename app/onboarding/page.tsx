@@ -235,7 +235,7 @@ function StepCountry({
         title="Your home base"
         subtitle="Choose a country or region to focus on. You can change this anytime."
       />
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
         {all.map((c) => {
           const active = c.code === country;
           return (
@@ -244,14 +244,23 @@ function StepCountry({
               onClick={() => setCountry(c.code)}
               aria-pressed={active}
               className={cn(
-                "flex items-center gap-2 rounded-xl border px-3 py-3 text-left text-sm font-medium transition-all active:scale-95",
+                "flex min-h-20 flex-col items-start justify-between rounded-xl border p-3 text-left transition-all active:scale-95",
                 active
-                  ? "border-primary bg-primary/5 ring-primary/10 ring-2"
-                  : "border-border bg-card",
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border bg-card hover:bg-muted",
               )}
             >
-              <span className="text-lg leading-none">{c.flag}</span>
-              <span className="truncate">{c.name}</span>
+              <span className="font-mono text-lg font-semibold tracking-normal">
+                {c.displayCode}
+              </span>
+              <span
+                className={cn(
+                  "line-clamp-2 text-xs leading-tight",
+                  active ? "text-primary-foreground/75" : "text-muted-foreground",
+                )}
+              >
+                {c.name}
+              </span>
             </button>
           );
         })}

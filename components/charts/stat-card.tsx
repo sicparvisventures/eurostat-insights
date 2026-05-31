@@ -9,27 +9,10 @@ import {
 } from "@/lib/eurostat/registry";
 import { countryName } from "@/lib/eurostat/constants";
 import { Sparkline } from "./sparkline";
+import { DeltaBadge } from "./delta-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-
-function trendMeta(
-  metric: Metric,
-  delta: number,
-): { color: string; icon: string } {
-  const good =
-    metric.trend === "up-good"
-      ? delta > 0
-      : metric.trend === "down-good"
-        ? delta < 0
-        : null;
-  if (good === null || delta === 0)
-    return { color: "text-muted-foreground", icon: delta >= 0 ? "TrendingUp" : "TrendingDown" };
-  return {
-    color: good ? "text-success" : "text-danger",
-    icon: delta > 0 ? "TrendingUp" : "TrendingDown",
-  };
-}
 
 export function StatCard({
   metric,
@@ -48,10 +31,6 @@ export function StatCard({
   const series = data ? timeSeries(data, metric.filters) : [];
   const latest = series.at(-1);
   const prev = series.at(-2);
-  const delta = latest && prev ? latest.value - prev.value : 0;
-  const pct = prev && prev.value ? (delta / Math.abs(prev.value)) * 100 : 0;
-  const showPct = metric.format === "compact" || metric.format === "currency";
-  const trend = trendMeta(metric, delta);
 
   const inner = (
     <div
@@ -91,19 +70,11 @@ export function StatCard({
             <div className="text-2xl font-bold tracking-tight tabular-nums">
               {formatMetricValue(metric, latest.value)}
             </div>
-            {prev && (
-              <div
-                className={cn(
-                  "flex items-center gap-0.5 text-xs font-semibold tabular-nums",
-                  trend.color,
-                )}
-              >
-                <Icon name={trend.icon} className="size-3.5" />
-                {showPct
-                  ? `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`
-                  : `${delta >= 0 ? "+" : ""}${delta.toFixed(metric.decimals ?? 1)}`}
-              </div>
-            )}
+            <DeltaBadge
+              metric={metric}
+              current={latest.value}
+              previous={prev?.value}
+            />
           </div>
           <Sparkline
             data={series.map((d) => d.value)}

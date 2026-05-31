@@ -16,27 +16,33 @@ export function CountryChips({
 }) {
   return (
     <div
-      className={cn("no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5", className)}
+      role="radiogroup"
+      aria-label="Country or region"
+      className={cn("w-full overflow-hidden", className)}
     >
-      {ALL.map((c) => {
-        const active = c.code === value;
-        return (
-          <button
-            key={c.code}
-            onClick={() => onChange(c.code)}
-            aria-pressed={active}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all active:scale-95",
-              active
-                ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                : "border-border bg-card text-foreground hover:bg-muted",
-            )}
-          >
-            <span className="text-base leading-none">{c.flag}</span>
-            {c.name}
-          </button>
-        );
-      })}
+      <div className="no-scrollbar flex gap-1.5 overflow-x-auto rounded-xl border border-border bg-muted/60 p-1">
+        {ALL.map((c) => {
+          const active = c.code === value;
+          return (
+            <button
+              key={c.code}
+              onClick={() => onChange(c.code)}
+              role="radio"
+              aria-checked={active}
+              aria-label={c.name}
+              title={c.name}
+              className={cn(
+                "flex h-9 min-w-12 shrink-0 items-center justify-center rounded-lg px-3 font-mono text-[13px] font-semibold tracking-normal transition-colors active:scale-95",
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background hover:text-foreground",
+              )}
+            >
+              {c.displayCode}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

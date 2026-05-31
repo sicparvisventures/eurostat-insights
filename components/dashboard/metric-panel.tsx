@@ -5,10 +5,9 @@ import { timeSeries } from "@/lib/eurostat/jsonstat";
 import { formatMetricValue, type Metric } from "@/lib/eurostat/registry";
 import { countryName } from "@/lib/eurostat/constants";
 import { Card } from "@/components/ui/card";
-import { Icon } from "@/components/ui/icon";
+import { DeltaBadge, periodLabel } from "@/components/charts/delta-badge";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { ChartSkeleton, EmptyState, ErrorState } from "@/components/charts/states";
-import { cn } from "@/lib/utils";
 
 export function MetricPanel({
   metric,
@@ -29,13 +28,6 @@ export function MetricPanel({
   const series = data ? timeSeries(data, metric.filters) : [];
   const latest = series.at(-1);
   const prev = series.at(-2);
-  const delta = latest && prev ? latest.value - prev.value : 0;
-  const good =
-    metric.trend === "up-good"
-      ? delta > 0
-      : metric.trend === "down-good"
-        ? delta < 0
-        : null;
 
   return (
     <Card className="overflow-hidden p-5">
@@ -62,26 +54,14 @@ export function MetricPanel({
             <span className="text-3xl font-bold tracking-tight tabular-nums">
               {formatMetricValue(metric, latest.value)}
             </span>
-            {prev && (
-              <span
-                className={cn(
-                  "mb-1 inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums",
-                  good === null
-                    ? "text-muted-foreground"
-                    : good
-                      ? "text-success"
-                      : "text-danger",
-                )}
-              >
-                <Icon
-                  name={delta >= 0 ? "TrendingUp" : "TrendingDown"}
-                  className="size-4"
-                />
-                {delta >= 0 ? "+" : ""}
-                {delta.toFixed(metric.decimals ?? 1)}
-                {metric.format === "percent" ? "pp" : ""}
-              </span>
-            )}
+            <DeltaBadge
+              metric={metric}
+              current={latest.value}
+              previous={prev?.value}
+              period={periodLabel(metric.frequency, prev?.time)}
+              size="md"
+              className="mb-1"
+            />
             <span className="text-muted-foreground mb-1 ml-auto text-xs">
               {latest.time}
             </span>
