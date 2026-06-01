@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { PWARegister } from "@/components/pwa-register";
+import { BRAND_NAME, BRAND_TAGLINE, BRAND_DESCRIPTION } from "@/lib/brand";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,15 +17,14 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const APP_NAME = "Eurostat Insights";
-const APP_DESCRIPTION =
-  "Explore official European statistics in a clean, interactive dashboard. Population, economy and digital trends — all sourced from Eurostat.";
+const APP_NAME = BRAND_NAME;
+const APP_DESCRIPTION = BRAND_DESCRIPTION;
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: {
-    default: "Eurostat Insights — European data, beautifully explored",
-    template: "%s · Eurostat Insights",
+    default: `${BRAND_NAME} — ${BRAND_TAGLINE}`,
+    template: `%s · ${BRAND_NAME}`,
   },
   description: APP_DESCRIPTION,
   manifest: "/manifest.webmanifest",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "Eurostat Insights",
+    title: BRAND_NAME,
     description: APP_DESCRIPTION,
     siteName: APP_NAME,
   },

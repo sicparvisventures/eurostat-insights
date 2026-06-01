@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Eurostat Insights",
-    short_name: "Insights",
+    name: "Statera",
+    short_name: "Statera",
     description:
-      "Explore official European statistics in a clean, interactive dashboard. Population, economy, digital — all from Eurostat.",
+      "Read Europe through official statistics and turn them into decisions — population, economy, digital and a hospitality forecast. Built on Eurostat.",
     start_url: "/",
     id: "/",
     display: "standalone",

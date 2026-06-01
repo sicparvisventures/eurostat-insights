@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
 const SESSION_KEY = "ei-splash-shown";
 
@@ -51,9 +52,9 @@ export function SplashScreen() {
             className="mt-5 text-center"
           >
             <p className="text-xl font-bold tracking-tight text-white">
-              Eurostat Insights
+              {BRAND_NAME}
             </p>
-            <p className="mt-1 text-sm text-white/55">European data, explored</p>
+            <p className="mt-1 text-sm text-white/55">{BRAND_TAGLINE}</p>
           </motion.div>
           <motion.div
             className="absolute bottom-16 h-1 w-28 overflow-hidden rounded-full bg-white/15"

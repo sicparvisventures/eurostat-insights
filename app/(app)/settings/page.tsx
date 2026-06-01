@@ -96,7 +96,7 @@ export default function SettingsPage() {
         <Section title="About" icon="Info">
           <div className="space-y-2 p-4 text-sm">
             <p className="text-muted-foreground leading-relaxed">
-              Eurostat Insights is an educational project for entertainment. All
+              Statera is an educational project for entertainment. All
               figures come exclusively from{" "}
               <a
                 href="https://ec.europa.eu/eurostat"

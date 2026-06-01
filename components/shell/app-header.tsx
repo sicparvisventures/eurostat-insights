@@ -52,9 +52,7 @@ export function AppHeader({
               )}
             </>
           ) : (
-            <span className="text-base font-bold tracking-tight">
-              Eurostat <span className="text-primary">Insights</span>
-            </span>
+            <span className="text-base font-bold tracking-tight">Statera</span>
           )}
         </div>
 

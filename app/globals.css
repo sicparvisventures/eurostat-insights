@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Eurostat Insights — design tokens
+   Statera — design tokens
    Editorial, restrained, flat. No gradients anywhere.
    Monochrome ink primary + muted categorical accents.
 --------------------------------------------------------------------------- */

@@ -15,6 +15,27 @@ import { ALL_METRICS } from "@/lib/eurostat/registry";
 /** Sentinel chip value for the "no theme filter" option. */
 const ALL_THEMES = "__all__";
 
+/** Compact labels for the long Eurostat theme names, so chips fit on mobile. */
+const THEME_SHORT: Record<string, string> = {
+  "Population and social conditions": "Population",
+  "Economy and finance": "Economy",
+  "Science, technology and digital society": "Digital",
+  "Science, technology, digital society": "Digital",
+  "Industry, trade and services": "Industry",
+  "Agriculture, forestry and fisheries": "Agriculture",
+  "International trade": "Trade",
+  "Environment and energy": "Environment",
+  "General and regional statistics": "Regional",
+  "Cross cutting topics": "Cross-cutting",
+  "Tables on EU policy": "EU policy",
+};
+
+function shortTheme(name: string): string {
+  if (THEME_SHORT[name]) return THEME_SHORT[name];
+  const first = name.split(/,| and /)[0].trim();
+  return first.length > 16 ? `${first.slice(0, 15)}…` : first;
+}
+
 function useDebounced<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -140,9 +161,10 @@ export default function ExplorePage() {
                 { value: ALL_THEMES, label: "All themes" },
                 ...themes.slice(0, 12).map((t) => ({
                   value: t.name,
+                  title: t.name,
                   label: (
                     <>
-                      {t.name}
+                      {shortTheme(t.name)}
                       <span className="ml-1.5 opacity-60">{t.count}</span>
                     </>
                   ),
@@ -155,7 +177,7 @@ export default function ExplorePage() {
         {/* results */}
         <section className="mt-5 pb-4">
           {isLoading ? (
-            <div className="grid gap-2.5 lg:grid-cols-2">
+            <div className="space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:space-y-0">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-[72px] w-full" />
               ))}
@@ -177,9 +199,9 @@ export default function ExplorePage() {
                   ? ` · showing top ${data.results.length}`
                   : ""}
               </p>
-              <div className="grid gap-2.5 lg:grid-cols-2">
+              <div className="space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:space-y-0">
                 {data.results.map((d) => (
-                <Link key={d.code} href={`/dataset/${d.code}`}>
+                <Link key={d.code} href={`/dataset/${d.code}`} className="block min-w-0">
                   <Card className="hover:border-primary/40 flex items-center gap-3 p-3.5 transition-colors active:scale-[0.99]">
                     <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-xl">
                       <Icon name="Database" className="size-5" />

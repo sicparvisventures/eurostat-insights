@@ -18,8 +18,8 @@ export default function OfflinePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">You&apos;re offline</h1>
         <p className="text-muted-foreground mt-2 max-w-sm">
-          Eurostat Insights needs a connection to load fresh data. Previously
-          viewed charts remain available.
+          Statera needs a connection to load fresh data. Previously viewed
+          charts remain available.
         </p>
       </div>
       <Button asChild>

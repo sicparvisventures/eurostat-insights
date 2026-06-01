@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Brand mark — a flat, solid glyph. Fixed colour in both themes. */
 export const BRAND = "#283142";
@@ -33,9 +34,7 @@ export function LogoWord({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <Logo size={32} />
-      <span className="text-lg font-semibold tracking-tight">
-        Eurostat Insights
-      </span>
+      <span className="text-lg font-semibold tracking-tight">{BRAND_NAME}</span>
     </div>
   );
 }

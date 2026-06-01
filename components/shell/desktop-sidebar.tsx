@@ -7,6 +7,7 @@ import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Icon } from "@/components/ui/icon";
 import { CONSUMER_TABS, type NavTab } from "@/components/shell/nav-tabs";
+import { BRAND_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,7 +40,7 @@ export function DesktopSidebar({
         {/* Brand */}
         <Link
           href={brandHref}
-          aria-label="Eurostat Insights — Home"
+          aria-label={`${BRAND_NAME} — Home`}
           className={cn(
             "flex items-center gap-2.5 rounded-2xl px-2 py-1.5",
             collapsed && "justify-center px-0",
@@ -48,7 +49,7 @@ export function DesktopSidebar({
           <Logo size={34} />
           {!collapsed && (
             <span className="truncate text-[15px] font-semibold tracking-tight">
-              Eurostat Insights
+              {BRAND_NAME}
             </span>
           )}
         </Link>
