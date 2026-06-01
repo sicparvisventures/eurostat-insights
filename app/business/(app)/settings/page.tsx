@@ -1,29 +1,49 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AppHeader } from "@/components/shell/app-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChipBar } from "@/components/ui/chip-bar";
 import { Icon } from "@/components/ui/icon";
+import {
+  BusinessTypePicker,
+  LocationSliders,
+} from "@/components/business/location-form";
 import { SectionTitle } from "@/components/business/business-widgets";
-import { useBusinessStore } from "@/lib/store/business";
+import {
+  useActiveLocation,
+  useBusinessHasHydrated,
+  useBusinessStore,
+} from "@/lib/store/business";
+import { EU_COUNTRIES } from "@/lib/eurostat/constants";
 
 export default function BusinessSettingsPage() {
   const router = useRouter();
-  const { profile, updateProfile, resetBusiness } = useBusinessStore();
+  const hydrated = useBusinessHasHydrated();
+  const group = useBusinessStore((s) => s.group);
+  const locations = useBusinessStore((s) => s.locations);
+  const setGroup = useBusinessStore((s) => s.setGroup);
+  const setActive = useBusinessStore((s) => s.setActiveLocation);
+  const updateLocation = useBusinessStore((s) => s.updateLocation);
+  const resetBusiness = useBusinessStore((s) => s.resetBusiness);
+  const active = useActiveLocation();
+
+  if (!hydrated) return null;
 
   return (
     <div>
       <AppHeader
         title="Business settings"
-        subtitle="Profile, sources and display"
+        subtitle="Group, locations and model"
         homeHref="/business/home"
       />
 
       <div className="space-y-6 px-5 pt-2">
         <section>
-          <SectionTitle icon="Sun" title="Appearance" />
+          <SectionTitle title="Appearance" />
           <Card className="flex items-center justify-between p-4">
             <span className="text-sm font-medium">Theme</span>
             <ThemeToggle />
@@ -31,98 +51,98 @@ export default function BusinessSettingsPage() {
         </section>
 
         <section>
-          <SectionTitle icon="Store" title="Business profile" />
+          <SectionTitle title="Group" />
           <Card className="space-y-4 p-4">
             <label className="block">
               <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-                Business name
+                Group name
               </span>
               <input
-                value={profile.businessName}
-                onChange={(e) =>
-                  updateProfile({ businessName: e.target.value })
-                }
+                value={group.name}
+                onChange={(e) => setGroup({ name: e.target.value })}
                 className="field-input"
               />
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-                  City
-                </span>
-                <input
-                  value={profile.city}
-                  onChange={(e) => updateProfile({ city: e.target.value })}
-                  className="field-input"
-                />
-              </label>
-              <label className="block">
-                <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-                  District
-                </span>
-                <input
-                  value={profile.districtCode}
-                  onChange={(e) =>
-                    updateProfile({ districtCode: e.target.value })
-                  }
-                  className="field-input"
-                />
-              </label>
-              <label className="block">
-                <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-                  Country
-                </span>
-                <input
-                  value={profile.country}
-                  onChange={(e) =>
-                    updateProfile({ country: e.target.value.toUpperCase() })
-                  }
-                  maxLength={2}
-                  className="field-input uppercase"
-                />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <NumberSetting
-                label="Daily budget"
-                value={profile.dailyBudget}
-                onChange={(dailyBudget) => updateProfile({ dailyBudget })}
-              />
-              <NumberSetting
-                label="Avg. ticket"
-                value={profile.averageTicket}
-                onChange={(averageTicket) => updateProfile({ averageTicket })}
-              />
-              <NumberSetting
-                label="Staff h / EUR 1k"
-                value={profile.targetStaffHoursPer1000}
-                onChange={(targetStaffHoursPer1000) =>
-                  updateProfile({ targetStaffHoursPer1000 })
-                }
-              />
-              <NumberSetting
-                label="Labor EUR / h"
-                value={profile.laborHourCost}
-                onChange={(laborHourCost) => updateProfile({ laborHourCost })}
-              />
-            </div>
+            <label className="block">
+              <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                Country
+              </span>
+              <select
+                value={group.country}
+                onChange={(e) => setGroup({ country: e.target.value })}
+                className="field-input"
+              >
+                {EU_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </Card>
         </section>
 
-        <section>
-          <SectionTitle icon="Info" title="About Business Mode" />
-          <Card className="space-y-2 p-4 text-sm">
-            <p className="text-muted-foreground leading-relaxed">
-              Business Mode combines open local signals with Eurostat as a
-              macro/regional baseline. It avoids social scraping and marks
-              credentialed sources until access is configured.
+        {active ? (
+          <section>
+            <SectionTitle title="Location setup" />
+            {locations.length > 1 && (
+              <ChipBar
+                ariaLabel="Location"
+                value={active.id}
+                onChange={setActive}
+                className="mb-3"
+                options={locations.map((l) => ({ value: l.id, label: l.name }))}
+              />
+            )}
+            <Card className="space-y-5 p-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                    Name
+                  </span>
+                  <input
+                    value={active.name}
+                    onChange={(e) =>
+                      updateLocation(active.id, { name: e.target.value })
+                    }
+                    className="field-input"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                    City
+                  </span>
+                  <input
+                    value={active.city}
+                    onChange={(e) =>
+                      updateLocation(active.id, { city: e.target.value })
+                    }
+                    className="field-input"
+                  />
+                </label>
+              </div>
+              <BusinessTypePicker
+                value={active.businessType}
+                onChange={(businessType) =>
+                  updateLocation(active.id, { businessType })
+                }
+              />
+              <LocationSliders
+                value={active}
+                onChange={(patch) => updateLocation(active.id, patch)}
+              />
+            </Card>
+          </section>
+        ) : (
+          <Card className="p-5 text-center">
+            <p className="text-muted-foreground text-sm">
+              No location yet.
             </p>
-            <p className="text-muted-foreground/70 text-xs">
-              Source strategy follows the internal hospitality and hotspot
-              research docs reviewed on 2026-05-31.
-            </p>
+            <Button asChild className="mt-3">
+              <Link href="/business/onboarding">Set up</Link>
+            </Button>
           </Card>
-        </section>
+        )}
 
         <Button
           variant="secondary"
@@ -136,30 +156,5 @@ export default function BusinessSettingsPage() {
         </Button>
       </div>
     </div>
-  );
-}
-
-function NumberSetting({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-        {label}
-      </span>
-      <input
-        type="number"
-        value={value}
-        min={0}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="field-input"
-      />
-    </label>
   );
 }

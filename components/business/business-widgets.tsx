@@ -1,200 +1,41 @@
+"use client";
+
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import {
-  demandBand,
-  type BusinessSignal,
-  type DaypartForecast,
-  type HotspotEstimate,
-  type SourceHealth,
-} from "@/lib/business/signals";
+import type {
+  DaypartForecast,
+  DayForecast,
+  HourPoint,
+  LocationForecast,
+} from "@/lib/business/forecast";
+import type { WeatherDay } from "@/lib/business/context";
 import { cn } from "@/lib/utils";
 
-export function BusinessScoreCard({
-  label,
-  value,
-  detail,
-  icon,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: string;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-muted-foreground text-xs font-medium">{label}</p>
-        <Icon name={icon} className="text-muted-foreground size-4" />
-      </div>
-      <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
-      <p className="text-muted-foreground mt-1 text-xs">{detail}</p>
-    </Card>
-  );
-}
+export const eur = (v: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(v);
 
-export function DaypartRows({
-  forecasts,
-  active,
-}: {
-  forecasts: DaypartForecast[];
-  active?: DaypartForecast["id"];
-}) {
-  return (
-    <div className="space-y-3">
-      {forecasts.map((item) => (
-        <Link
-          href="/business/forecast"
-          key={item.id}
-          className={cn(
-            "border-border bg-card block rounded-2xl border p-4 transition-all active:scale-[0.99]",
-            active === item.id && "border-primary/50 ring-primary/10 ring-2",
-          )}
-        >
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold">{item.label}</p>
-              <p className="text-muted-foreground text-xs">{item.window}</p>
-            </div>
-            <span className="font-mono text-xs uppercase text-muted-foreground">
-              {demandBand(item.demand)}
-            </span>
-          </div>
-          <div className="mb-3 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${item.demand}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <MiniStat label="Demand" value={`${item.demand}`} />
-            <MiniStat
-              label="vs normal"
-              value={`${item.delta > 0 ? "+" : ""}${item.delta}%`}
-            />
-            <MiniStat label="Confidence" value={`${item.confidence}%`} />
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-export function HotspotList({ hotspots }: { hotspots: HotspotEstimate[] }) {
-  return (
-    <div className="space-y-3">
-      {hotspots.map((hotspot) => (
-        <Card key={hotspot.id} className="p-4">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold">{hotspot.label}</p>
-              <p className="text-muted-foreground text-xs">
-                {hotspot.startsAt}-{hotspot.endsAt} · {hotspot.radiusMeters}m
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="font-semibold tabular-nums">{hotspot.score}</p>
-              <p className="text-muted-foreground text-[10px] uppercase">
-                score
-              </p>
-            </div>
-          </div>
-          <div className="mb-3 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${hotspot.score}%` }}
-            />
-          </div>
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {hotspot.sources.map((source) => (
-              <span
-                key={source}
-                className="bg-muted rounded-full px-2 py-1 text-[11px] font-medium"
-              >
-                {source}
-              </span>
-            ))}
-          </div>
-          <ul className="space-y-1.5">
-            {hotspot.reasons.map((reason) => (
-              <li
-                key={reason}
-                className="text-muted-foreground flex gap-2 text-sm leading-snug"
-              >
-                <Icon name="Check" className="mt-0.5 size-3.5 shrink-0" />
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-export function SignalRows({ signals }: { signals: BusinessSignal[] }) {
-  return (
-    <div className="divide-border overflow-hidden rounded-2xl border bg-card">
-      {signals.map((signal) => (
-        <div key={`${signal.source}-${signal.signal}`} className="p-4">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold leading-tight">{signal.signal}</p>
-              <p className="text-muted-foreground text-xs">
-                {signal.source} · {signal.horizon}
-              </p>
-            </div>
-            <DirectionBadge direction={signal.direction} />
-          </div>
-          <div className="mb-2 flex items-end gap-2">
-            <p className="text-2xl font-bold tracking-tight tabular-nums">
-              {signal.value}
-            </p>
-            <p className="text-muted-foreground pb-1 text-xs">{signal.unit}</p>
-          </div>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {signal.explanation}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function SourceHealthList({ items }: { items: SourceHealth[] }) {
-  return (
-    <div className="divide-border overflow-hidden rounded-2xl border bg-card">
-      {items.map((item) => (
-        <div key={item.source} className="flex items-center gap-3 p-4">
-          <StatusDot status={item.status} />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium leading-tight">{item.source}</p>
-            <p className="text-muted-foreground text-xs">{item.freshness}</p>
-          </div>
-          <span className="font-mono text-[10px] uppercase text-muted-foreground">
-            {item.status.replace("_", " ")}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const eur1 = (v: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 1,
+  }).format(v);
 
 export function SectionTitle({
-  icon,
   title,
   href,
 }: {
-  icon: string;
   title: string;
   href?: string;
 }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon name={icon} className="text-primary size-4" />
-        <h2 className="font-semibold tracking-tight">{title}</h2>
-      </div>
+      <h2 className="font-semibold tracking-tight">{title}</h2>
       {href && (
         <Link
           href={href}
@@ -207,50 +48,367 @@ export function SectionTitle({
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+export function DemandPill({ band }: { band: string }) {
+  const tone =
+    band === "hotspot" || band === "busy"
+      ? "bg-success/15 text-success"
+      : band === "normal"
+        ? "bg-muted text-muted-foreground"
+        : "bg-warning/15 text-warning";
+  return (
+    <span
+      className={cn(
+        "rounded-full px-3 py-1 text-xs font-semibold capitalize",
+        tone,
+      )}
+    >
+      {band}
+    </span>
+  );
+}
+
+export function DeltaText({
+  value,
+  className,
+}: {
+  value: number;
+  className?: string;
+}) {
+  const tone =
+    value > 0 ? "text-success" : value < 0 ? "text-danger" : "text-muted-foreground";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums",
+        tone,
+        className,
+      )}
+    >
+      <Icon
+        name={value > 0 ? "ArrowUpRight" : value < 0 ? "ArrowDownRight" : "ArrowRight"}
+        className="size-3"
+      />
+      {value > 0 ? "+" : ""}
+      {value}% vs normal
+    </span>
+  );
+}
+
+export function ForecastHero({
+  title,
+  subtitle,
+  forecast,
+  briefing,
+}: {
+  title: string;
+  subtitle: string;
+  forecast: LocationForecast;
+  briefing?: string;
+}) {
+  return (
+    <section className="border-border bg-card rounded-2xl border p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
+            {subtitle}
+          </p>
+          <div className="mt-2 flex items-end gap-3">
+            <h1 className="text-4xl font-bold tracking-tight tabular-nums">
+              {eur(forecast.revenue)}
+            </h1>
+            <DeltaText value={forecast.deltaVsNormalPct} className="mb-1.5" />
+          </div>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {title} · {forecast.covers} covers · {eur1(forecast.avgTicket)} avg
+            ticket
+          </p>
+        </div>
+        <DemandPill band={forecast.demandBand} />
+      </div>
+
+      <div className="bg-muted mb-1 h-2 overflow-hidden rounded-full">
+        <div
+          className="bg-primary h-full rounded-full"
+          style={{ width: `${forecast.demand}%` }}
+        />
+      </div>
+      <p className="text-muted-foreground mb-4 text-xs">
+        Demand {forecast.demand}/100 · confidence {forecast.confidence}%
+      </p>
+
+      {briefing && (
+        <p className="text-foreground/90 text-sm leading-relaxed">{briefing}</p>
+      )}
+    </section>
+  );
+}
+
+export interface KpiItem {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "good" | "bad";
+}
+
+export function KpiGrid({ items }: { items: KpiItem[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
+      {items.map((kpi) => (
+        <Card key={kpi.label} className="p-4">
+          <p className="text-muted-foreground text-xs font-medium">
+            {kpi.label}
+          </p>
+          <p className="mt-2 text-xl font-bold tracking-tight tabular-nums">
+            {kpi.value}
+          </p>
+          {kpi.sub && (
+            <p
+              className={cn(
+                "mt-1 text-xs",
+                kpi.tone === "good"
+                  ? "text-success"
+                  : kpi.tone === "bad"
+                    ? "text-danger"
+                    : "text-muted-foreground",
+              )}
+            >
+              {kpi.sub}
+            </p>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function DaypartBars({ dayparts }: { dayparts: DaypartForecast[] }) {
+  return (
+    <div className="space-y-3">
+      {dayparts.map((dp) => (
+        <Card key={dp.id} className="p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold">{dp.label}</p>
+              <p className="text-muted-foreground text-xs">{dp.window}</p>
+            </div>
+            <p className="text-lg font-bold tabular-nums">{eur(dp.revenue)}</p>
+          </div>
+          <div className="bg-muted mb-3 h-2 overflow-hidden rounded-full">
+            <div
+              className="bg-primary h-full rounded-full"
+              style={{ width: `${dp.demand}%` }}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <MiniStat label="Covers" value={`${dp.covers}`} />
+            <MiniStat label="Staff" value={`${dp.laborHours}h`} />
+            <MiniStat label="Labour" value={`${(dp.laborRatio * 100).toFixed(1)}%`} />
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function HourlyCurve({ hourly }: { hourly: HourPoint[] }) {
+  const max = Math.max(...hourly.map((h) => h.revenue), 1);
+  return (
+    <Card className="p-4">
+      <div className="space-y-2">
+        {hourly.map((h) => (
+          <div
+            key={h.hour}
+            className="grid grid-cols-[44px_1fr_64px] items-center gap-3 text-sm"
+          >
+            <span className="text-muted-foreground font-mono text-xs">
+              {h.hour}
+            </span>
+            <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full rounded-full"
+                style={{ width: `${Math.max((h.revenue / max) * 100, 3)}%` }}
+              />
+            </div>
+            <span className="text-right font-semibold tabular-nums">
+              {eur(h.revenue)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+export function WeekBars({
+  week,
+  budgetPerOpenDay,
+}: {
+  week: DayForecast[];
+  budgetPerOpenDay?: number;
+}) {
+  const max = Math.max(...week.map((d) => d.revenue), budgetPerOpenDay ?? 0, 1);
+  return (
+    <Card className="p-4">
+      <div className="flex items-end justify-between gap-1.5" style={{ height: 140 }}>
+        {week.map((d) => (
+          <div key={d.weekday} className="flex flex-1 flex-col items-center gap-1.5">
+            <div className="flex w-full flex-1 items-end justify-center">
+              <div
+                className={cn(
+                  "w-full max-w-7 rounded-t-md transition-all",
+                  d.isToday
+                    ? "bg-primary"
+                    : d.open
+                      ? "bg-primary/35"
+                      : "bg-muted",
+                )}
+                style={{ height: `${(d.revenue / max) * 100}%` }}
+                title={`${d.weekday}: ${eur(d.revenue)}`}
+              />
+            </div>
+            <span
+              className={cn(
+                "text-[10px] font-medium",
+                d.isToday ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              {d.weekday}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+export function BudgetProgress({
+  achieved,
+  budget,
+  forecast,
+}: {
+  achieved: number;
+  budget: number;
+  forecast: number;
+}) {
+  const pct = budget ? Math.min(100, Math.round((achieved / budget) * 100)) : 0;
+  const fpct = budget ? Math.min(100, Math.round((forecast / budget) * 100)) : 0;
+  const remaining = Math.max(0, budget - achieved);
+  return (
+    <Card className="p-5">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="font-semibold">Weekly budget</p>
+        <p className="text-muted-foreground text-sm tabular-nums">
+          {pct}% achieved
+        </p>
+      </div>
+      <div className="bg-muted relative h-3 overflow-hidden rounded-full">
+        <div
+          className="bg-primary/30 absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${fpct}%` }}
+        />
+        <div
+          className="bg-primary absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <MiniStat label="Achieved" value={eur(achieved)} />
+        <MiniStat label="Forecast wk" value={eur(forecast)} />
+        <MiniStat label="Budget" value={eur(budget)} />
+      </div>
+      <p className="text-muted-foreground mt-2 text-xs">
+        {eur(remaining)} remaining to budget.
+      </p>
+    </Card>
+  );
+}
+
+export function ShiftLaborBars({ forecast }: { forecast: LocationForecast }) {
+  const rows = [
+    {
+      label: "Day total",
+      revenue: forecast.revenue,
+      laborCost: forecast.laborCost,
+      ratio: forecast.laborRatio,
+    },
+    ...forecast.dayparts
+      .filter((d) => d.id !== "late")
+      .map((d) => ({
+        label: d.label,
+        revenue: d.revenue,
+        laborCost: d.laborCost,
+        ratio: d.laborRatio,
+      })),
+  ];
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => {
+        const laborPct = r.revenue ? (r.laborCost / r.revenue) * 100 : 0;
+        return (
+          <Card key={r.label} className="p-4">
+            <div className="mb-2 flex items-baseline justify-between">
+              <p className="font-semibold">{r.label}</p>
+              <p className="text-sm tabular-nums">{eur(r.revenue)}</p>
+            </div>
+            <div className="bg-muted flex h-3 overflow-hidden rounded-full">
+              <div
+                className="bg-danger/70 h-full"
+                style={{ width: `${laborPct}%` }}
+                title={`Labour ${eur(r.laborCost)}`}
+              />
+              <div className="bg-primary h-full flex-1" title="After labour" />
+            </div>
+            <div className="text-muted-foreground mt-2 flex justify-between text-xs">
+              <span>Labour {eur(r.laborCost)} · {(r.ratio * 100).toFixed(1)}%</span>
+              <span>After labour {eur(r.revenue - r.laborCost)}</span>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+export function WeatherStrip({ weather }: { weather: WeatherDay | null }) {
+  if (!weather) {
+    return (
+      <Card className="p-4">
+        <p className="text-muted-foreground text-sm">Weather unavailable.</p>
+      </Card>
+    );
+  }
+  const icon =
+    weather.precipitation > 3
+      ? "CloudRain"
+      : weather.precipitation > 0.3
+        ? "Umbrella"
+        : weather.tempMax >= 20
+          ? "Sun"
+          : "CloudSun";
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-4">
+        <div className="bg-muted flex size-12 shrink-0 items-center justify-center rounded-xl">
+          <Icon name={icon} className="size-6" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold">{weather.summary}</p>
+          <p className="text-muted-foreground text-sm">
+            {Math.round(weather.tempMin)}° / {Math.round(weather.tempMax)}° ·{" "}
+            {weather.precipitation.toFixed(1)} mm · wind{" "}
+            {Math.round(weather.windSpeed)} km/h
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+export function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-muted-foreground text-[10px] uppercase">{label}</p>
       <p className="font-semibold tabular-nums">{value}</p>
     </div>
-  );
-}
-
-function DirectionBadge({
-  direction,
-}: {
-  direction: BusinessSignal["direction"];
-}) {
-  const label =
-    direction === "positive"
-      ? "uplift"
-      : direction === "negative"
-        ? "risk"
-        : "context";
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2 py-1 text-[11px] font-semibold",
-        direction === "positive" && "bg-success/12 text-success",
-        direction === "negative" && "bg-danger/12 text-danger",
-        direction === "neutral" && "bg-muted text-muted-foreground",
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StatusDot({ status }: { status: SourceHealth["status"] }) {
-  return (
-    <span
-      className={cn(
-        "size-2.5 shrink-0 rounded-full",
-        status === "ok" && "bg-success",
-        status === "degraded" && "bg-warning",
-        status === "missing_credentials" && "bg-muted-foreground",
-        status === "unavailable" && "bg-danger",
-      )}
-    />
   );
 }

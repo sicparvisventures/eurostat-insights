@@ -1,5 +1,5 @@
-import { BusinessTabBar } from "@/components/shell/business-tab-bar";
-import { PageTransition } from "@/components/shell/page-transition";
+import { AppShell } from "@/components/shell/app-shell";
+import { BUSINESS_TABS } from "@/components/shell/nav-tabs";
 
 export default function BusinessAppLayout({
   children,
@@ -7,11 +7,8 @@ export default function BusinessAppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
-      <main className="flex-1 pb-28">
-        <PageTransition>{children}</PageTransition>
-      </main>
-      <BusinessTabBar />
-    </div>
+    <AppShell tabs={BUSINESS_TABS} brandHref="/business/home" splash={false}>
+      {children}
+    </AppShell>
   );
 }

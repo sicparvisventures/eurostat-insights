@@ -1,125 +1,171 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { AppHeader } from "@/components/shell/app-header";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { ChipBar } from "@/components/ui/chip-bar";
 import { Icon } from "@/components/ui/icon";
 import {
   SectionTitle,
-  SignalRows,
-  SourceHealthList,
+  WeatherStrip,
 } from "@/components/business/business-widgets";
+import { BUSINESS_SIGNAL_SOURCES, SOURCE_HEALTH } from "@/lib/business/signals";
 import {
-  BUSINESS_SIGNAL_SOURCES,
-  BUSINESS_SIGNALS,
-  SOURCE_HEALTH,
-} from "@/lib/business/signals";
-import { BUSINESS_EUROSTAT_SIGNALS } from "@/lib/business/sources/eurostat";
-import { BELGIUM_MVP_SOURCES } from "@/lib/business/restaurant-kpis";
-import { useBusinessStore } from "@/lib/store/business";
-import { DEFAULT_DATA_RANGE, type DataRange } from "@/lib/date-range";
+  useActiveLocation,
+  useBusinessHasHydrated,
+  useBusinessStore,
+} from "@/lib/store/business";
+import { useLocationForecast } from "@/lib/business/use-forecast";
+import { cn } from "@/lib/utils";
 
 export default function BusinessSignalsPage() {
-  const profile = useBusinessStore((state) => state.profile);
-  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
+  const hydrated = useBusinessHasHydrated();
+  const locations = useBusinessStore((s) => s.locations);
+  const setActive = useBusinessStore((s) => s.setActiveLocation);
+  const active = useActiveLocation();
+  const { forecast, weather, ctx } = useLocationForecast(active);
+
+  if (!hydrated) return null;
+  if (!active || !forecast) {
+    return (
+      <div className="px-5 pt-16 text-center">
+        <p className="text-muted-foreground">No location configured yet.</p>
+        <Button asChild className="mt-4">
+          <Link href="/business/onboarding">
+            Set up <Icon name="ArrowRight" />
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const today = weather.data?.today;
+  const signals = [
+    {
+      name: "Weather effect",
+      value: forecast.modifiers.weather,
+      unit: "% demand",
+      explanation: today
+        ? `${today.summary}, ${Math.round(today.tempMax)}° and ${today.precipitation.toFixed(1)} mm shape terrace and walk-in.`
+        : "Live weather unavailable for this city.",
+    },
+    {
+      name: "Tourism season",
+      value: forecast.modifiers.season,
+      unit: "% demand",
+      explanation: `${ctx.seasonLabel} — derived from Eurostat hotel-nights seasonality for ${active.country}.`,
+    },
+    {
+      name: "Weekday pattern",
+      value: forecast.modifiers.weekday,
+      unit: "% demand",
+      explanation: "Typical hospitality weekday rhythm versus the weekly average.",
+    },
+    {
+      name: "Event spillover",
+      value: forecast.modifiers.event,
+      unit: "% demand",
+      explanation: "Simulated nearby event gravity. Connect Ticketmaster/UiT for live events.",
+    },
+    {
+      name: "Dining inflation",
+      value: ctx.cateringInflation,
+      unit: "% y/y",
+      explanation: "Eurostat HICP catering price pressure (CP111) — pricing context.",
+      pricing: true,
+    },
+  ];
 
   return (
     <div>
       <AppHeader
         title="Signals"
-        subtitle="Source explorer and provenance"
+        subtitle={`${active.name} · live demand drivers`}
         homeHref="/business/home"
       />
 
       <div className="space-y-7 px-5 pt-2">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">Signal window</p>
-            <p className="text-muted-foreground text-xs">
-              Controls source review and evidence windows.
-            </p>
-          </div>
-          <DateRangePicker value={range} onChange={setRange} />
-        </div>
+        {locations.length > 1 && (
+          <ChipBar
+            ariaLabel="Location"
+            value={active.id}
+            onChange={setActive}
+            options={locations.map((l) => ({ value: l.id, label: l.name }))}
+          />
+        )}
 
         <section>
-          <SectionTitle icon="Radar" title="Live decision signals" />
-          <SignalRows signals={BUSINESS_SIGNALS} />
-        </section>
-
-        <section>
-          <SectionTitle icon="MapPinned" title="Belgium MVP source evidence" />
-          <div className="space-y-3">
-            {BELGIUM_MVP_SOURCES.map((source) => (
-              <Card key={source.source} className="p-4">
-                <p className="font-semibold">{source.source}</p>
-                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {source.use}
-                </p>
-                <p className="text-muted-foreground mt-3 text-xs">
-                  Reliability: {source.reliability}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <SectionTitle icon="Database" title="Source health" />
-          <SourceHealthList items={SOURCE_HEALTH} />
-        </section>
-
-        <section>
-          <SectionTitle icon="Compass" title="Source inventory" />
-          <div className="grid grid-cols-1 gap-3">
-            {BUSINESS_SIGNAL_SOURCES.map((source) => (
-              <Card key={source.id} className="p-4">
-                <div className="mb-3 flex items-start gap-3">
-                  <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-xl">
-                    <Icon name={source.icon} className="size-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{source.title}</p>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {source.description}
-                    </p>
-                  </div>
+          <SectionTitle title="Today's demand drivers" />
+          <div className="divide-border overflow-hidden rounded-2xl border bg-card">
+            {signals.map((s) => (
+              <div key={s.name} className="border-border border-b p-4 last:border-0">
+                <div className="mb-1 flex items-start justify-between gap-3">
+                  <p className="font-semibold leading-tight">{s.name}</p>
+                  <SignalValue value={s.value} pricing={s.pricing} />
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Tag>{source.access}</Tag>
-                  <Tag>{source.priority}</Tag>
-                  {profile.connectedSources.includes(source.id) && (
-                    <Tag>enabled</Tag>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <SectionTitle icon="Euro" title="Eurostat business baseline" />
-          <div className="divide-y divide-border overflow-hidden rounded-2xl border bg-card">
-            {BUSINESS_EUROSTAT_SIGNALS.map((signal) => (
-              <div key={signal.id} className="p-4">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold leading-tight">{signal.title}</p>
-                    <p className="text-muted-foreground font-mono text-[10px] uppercase">
-                      {signal.datasetCode} · {signal.cadence}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                    {signal.businessUse}
-                  </span>
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  {signal.geoLevel} baseline · freshness lag:{" "}
-                  {signal.freshnessLag}
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {s.explanation}
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section>
+          <SectionTitle title="7-day weather outlook" />
+          {weather.data?.days?.length ? (
+            <Card className="divide-border divide-y p-0">
+              {weather.data.days.slice(0, 7).map((d) => (
+                <div
+                  key={d.date}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm"
+                >
+                  <span className="text-muted-foreground w-20 font-medium">
+                    {new Date(d.date).toLocaleDateString("en-GB", {
+                      weekday: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                  <span className="flex-1">{d.summary}</span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {d.precipitation.toFixed(1)} mm
+                  </span>
+                  <span className="w-16 text-right font-semibold tabular-nums">
+                    {Math.round(d.tempMin)}°/{Math.round(d.tempMax)}°
+                  </span>
+                </div>
+              ))}
+            </Card>
+          ) : (
+            <WeatherStrip weather={null} />
+          )}
+        </section>
+
+        <section>
+          <SectionTitle title="Connectors" />
+          <div className="space-y-2.5">
+            {BUSINESS_SIGNAL_SOURCES.map((source) => {
+              const health = SOURCE_HEALTH.find((h) =>
+                h.source.toLowerCase().includes(source.title.split(" ")[0].toLowerCase()),
+              );
+              return (
+                <Card key={source.id} className="flex items-center gap-3 p-3.5">
+                  <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-xl">
+                    <Icon name={source.icon} className="size-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-tight">
+                      {source.title}
+                    </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {source.description}
+                    </p>
+                  </div>
+                  <StatusDot status={health?.status ?? "ok"} />
+                </Card>
+              );
+            })}
           </div>
         </section>
       </div>
@@ -127,10 +173,42 @@ export default function BusinessSignalsPage() {
   );
 }
 
-function Tag({ children }: { children: React.ReactNode }) {
+function SignalValue({
+  value,
+  pricing,
+}: {
+  value: number | null;
+  pricing?: boolean;
+}) {
+  if (value == null) return <span className="text-muted-foreground text-sm">—</span>;
+  const tone = pricing
+    ? value > 0
+      ? "text-warning"
+      : "text-muted-foreground"
+    : value > 0
+      ? "text-success"
+      : value < 0
+        ? "text-danger"
+        : "text-muted-foreground";
   return (
-    <span className="bg-muted rounded-full px-2 py-1 text-[11px] font-medium">
-      {children}
+    <span className={cn("text-lg font-bold tabular-nums", tone)}>
+      {value > 0 ? "+" : ""}
+      {value}
+      {pricing ? "%" : "%"}
     </span>
+  );
+}
+
+function StatusDot({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "size-2.5 shrink-0 rounded-full",
+        status === "ok" && "bg-success",
+        status === "degraded" && "bg-warning",
+        status === "missing_credentials" && "bg-muted-foreground",
+        status === "unavailable" && "bg-danger",
+      )}
+    />
   );
 }

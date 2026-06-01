@@ -6,14 +6,8 @@ import { motion } from "framer-motion";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Icon } from "@/components/ui/icon";
+import { CONSUMER_TABS, type NavTab } from "@/components/shell/nav-tabs";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { href: "/home", label: "Home", icon: "Home" },
-  { href: "/topics", label: "Topics", icon: "LayoutGrid" },
-  { href: "/explore", label: "Explore", icon: "Compass" },
-  { href: "/settings", label: "Settings", icon: "Settings" },
-];
 
 /**
  * Desktop-only left rail. Shares the bottom tab bar's visual language (floating
@@ -23,9 +17,13 @@ const TABS = [
 export function DesktopSidebar({
   collapsed,
   onToggle,
+  tabs = CONSUMER_TABS,
+  brandHref = "/home",
 }: {
   collapsed: boolean;
   onToggle: () => void;
+  tabs?: NavTab[];
+  brandHref?: string;
 }) {
   const pathname = usePathname();
 
@@ -40,7 +38,7 @@ export function DesktopSidebar({
       <div className="border-border/60 bg-card/80 flex h-full flex-col rounded-[26px] border p-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl">
         {/* Brand */}
         <Link
-          href="/home"
+          href={brandHref}
           aria-label="Eurostat Insights — Home"
           className={cn(
             "flex items-center gap-2.5 rounded-2xl px-2 py-1.5",
@@ -57,7 +55,7 @@ export function DesktopSidebar({
 
         {/* Nav */}
         <nav aria-label="Primary" className="mt-4 flex flex-1 flex-col gap-1.5">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active =
               pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (

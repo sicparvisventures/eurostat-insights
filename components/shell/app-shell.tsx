@@ -5,6 +5,7 @@ import { BottomTabBar } from "@/components/shell/bottom-tab-bar";
 import { DesktopSidebar } from "@/components/shell/desktop-sidebar";
 import { PageTransition } from "@/components/shell/page-transition";
 import { SplashScreen } from "@/components/shell/splash-screen";
+import { CONSUMER_TABS, type NavTab } from "@/components/shell/nav-tabs";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "ei-sidebar-collapsed";
@@ -28,7 +29,17 @@ function setCollapsed(value: boolean) {
  * Responsive app frame: a floating bottom tab bar on mobile and a collapsible
  * left rail on desktop, with the content column reflowing to fit the rail.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  tabs = CONSUMER_TABS,
+  brandHref = "/home",
+  splash = true,
+}: {
+  children: React.ReactNode;
+  tabs?: NavTab[];
+  brandHref?: string;
+  splash?: boolean;
+}) {
   const collapsed = useSyncExternalStore(
     subscribe,
     getSnapshot,
@@ -37,10 +48,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
-      <SplashScreen />
+      {splash && <SplashScreen />}
       <DesktopSidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(!collapsed)}
+        tabs={tabs}
+        brandHref={brandHref}
       />
 
       <div
@@ -54,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <BottomTabBar />
+      <BottomTabBar tabs={tabs} />
     </div>
   );
 }

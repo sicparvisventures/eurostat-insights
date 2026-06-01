@@ -1,148 +1,166 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AppHeader } from "@/components/shell/app-header";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { ChipBar } from "@/components/ui/chip-bar";
+import { Segmented } from "@/components/ui/segmented";
+import { Slider } from "@/components/ui/slider";
 import { Icon } from "@/components/ui/icon";
 import {
-  DaypartRows,
-  HotspotList,
+  BudgetProgress,
+  DaypartBars,
+  ForecastHero,
+  HourlyCurve,
   SectionTitle,
+  ShiftLaborBars,
+  WeekBars,
 } from "@/components/business/business-widgets";
 import {
-  DAYPART_FORECASTS,
-  HOTSPOT_ESTIMATES,
-  demandBand,
-} from "@/lib/business/signals";
-import {
-  FORECAST_ENGINE_STEPS,
-  KM11_HOURLY_REVENUE,
-} from "@/lib/business/restaurant-kpis";
-import { useBusinessStore } from "@/lib/store/business";
-import { DEFAULT_DATA_RANGE, type DataRange } from "@/lib/date-range";
+  useActiveLocation,
+  useBusinessHasHydrated,
+  useBusinessStore,
+} from "@/lib/store/business";
+import { useLocationForecast } from "@/lib/business/use-forecast";
+import { buildBriefing, type ForecastModifiers } from "@/lib/business/forecast";
+
+type WeatherScenario = "live" | "sunny" | "rainy";
+
+const SUNNY = { tempMax: 25, tempMin: 15, precipitation: 0, windSpeed: 10, summary: "Clear" };
+const RAINY = { tempMax: 14, tempMin: 9, precipitation: 9, windSpeed: 26, summary: "Rain" };
 
 export default function BusinessForecastPage() {
-  const profile = useBusinessStore((state) => state.profile);
-  const [range, setRange] = useState<DataRange>(DEFAULT_DATA_RANGE);
-  const dinner = DAYPART_FORECASTS.find((item) => item.id === "dinner");
+  const hydrated = useBusinessHasHydrated();
+  const locations = useBusinessStore((s) => s.locations);
+  const setActive = useBusinessStore((s) => s.setActiveLocation);
+  const active = useActiveLocation();
+
+  const [scenario, setScenario] = useState<WeatherScenario>("live");
+  const [eventBoost, setEventBoost] = useState(0);
+
+  const override: Partial<ForecastModifiers> = {};
+  if (scenario === "sunny") override.weather = SUNNY;
+  if (scenario === "rainy") override.weather = RAINY;
+  if (eventBoost > 0) override.eventUplift = eventBoost / 100;
+
+  const { forecast } = useLocationForecast(active, override);
+
+  if (!hydrated) return null;
+  if (!active || !forecast) {
+    return (
+      <EmptyForecast />
+    );
+  }
 
   return (
     <div>
       <AppHeader
         title="Forecast"
-        subtitle={`${profile.city} · today and this week`}
+        subtitle={`${active.name} · ${active.city}`}
         homeHref="/business/home"
       />
 
       <div className="space-y-7 px-5 pt-2">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">Forecast window</p>
-            <p className="text-muted-foreground text-xs">
-              Daily now; week/month aggregation is model-ready.
-            </p>
-          </div>
-          <DateRangePicker value={range} onChange={setRange} />
-        </div>
+        {locations.length > 1 && (
+          <ChipBar
+            ariaLabel="Location"
+            value={active.id}
+            onChange={setActive}
+            options={locations.map((l) => ({ value: l.id, label: l.name }))}
+          />
+        )}
 
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-5 flex items-start justify-between">
-            <div>
-              <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
-                Dinner · {dinner?.window}
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">
-                {dinner?.demand}% demand score
-              </h1>
-            </div>
-            <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-              {dinner ? demandBand(dinner.demand) : "busy"}
-            </span>
-          </div>
-          <div className="mb-5 h-3 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${dinner?.demand ?? 78}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Advice icon="Users" title="Staffing" value={dinner?.staff} />
-            <Advice icon="Store" title="Stock" value={dinner?.stock} />
-          </div>
-        </section>
-
+        {/* Scenario planner */}
         <section>
-          <SectionTitle icon="BarChart3" title="Hourly revenue baseline" />
-          <Card className="p-4">
-            <div className="space-y-2.5">
-              {KM11_HOURLY_REVENUE.map((row) => (
-                <div key={row.hour} className="grid grid-cols-[48px_1fr_74px] items-center gap-3 text-sm">
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {row.hour}
-                  </span>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${Math.max(row.share * 5, 4)}%` }}
-                    />
-                  </div>
-                  <span className="text-right font-semibold tabular-nums">
-                    EUR {row.revenue.toLocaleString("en-GB")}
-                  </span>
-                </div>
-              ))}
+          <SectionTitle title="Scenario planner" />
+          <Card className="space-y-4 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Weather</p>
+                <p className="text-muted-foreground text-xs">
+                  Live uses today&apos;s Open-Meteo data.
+                </p>
+              </div>
+              <div className="no-scrollbar overflow-x-auto">
+                <Segmented
+                  value={scenario}
+                  onChange={setScenario}
+                  options={[
+                    { value: "live", label: "Live" },
+                    { value: "sunny", label: "Sunny" },
+                    { value: "rainy", label: "Rainy" },
+                  ]}
+                />
+              </div>
             </div>
+            <Slider
+              label="Event uplift"
+              value={eventBoost}
+              min={0}
+              max={25}
+              format={(v) => `+${v}%`}
+              hint="Simulate nearby concerts, sports or festivals."
+              onChange={setEventBoost}
+            />
           </Card>
         </section>
 
+        <ForecastHero
+          title={active.name}
+          subtitle="Scenario · operating forecast"
+          forecast={forecast}
+          briefing={buildBriefing(active, forecast)}
+        />
+
         <section>
-          <SectionTitle icon="Info" title="Forecast engine evidence" />
-          <div className="space-y-3">
-            {FORECAST_ENGINE_STEPS.map((step) => (
-              <Card key={step.step} className="p-4">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <p className="font-semibold">{step.step}</p>
-                  <span className="bg-muted rounded-full px-2 py-1 text-xs font-semibold">
-                    {step.weight}
-                  </span>
-                </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {step.detail}
-                </p>
-              </Card>
-            ))}
+          <SectionTitle title="Daypart plan" />
+          <DaypartBars dayparts={forecast.dayparts} />
+        </section>
+
+        <section>
+          <SectionTitle title="Hourly revenue curve" />
+          <HourlyCurve hourly={forecast.hourly} />
+        </section>
+
+        <section>
+          <SectionTitle title="Shift volume vs labour" />
+          <ShiftLaborBars forecast={forecast} />
+          <p className="text-muted-foreground mt-2 px-1 text-xs">
+            Staffing benchmark: {active.targetStaffHoursPer1000}h per €1,000 ·{" "}
+            {forecast.laborHours}h planned today.
+          </p>
+        </section>
+
+        <section className="grid gap-3 lg:grid-cols-2">
+          <div>
+            <SectionTitle title="This week" />
+            <WeekBars week={forecast.week} />
           </div>
-        </section>
-
-        <section>
-          <SectionTitle icon="Clock" title="Daypart plan" />
-          <DaypartRows forecasts={DAYPART_FORECASTS} active="dinner" />
-        </section>
-
-        <section>
-          <SectionTitle icon="MapPinned" title="Hotspot explanation" />
-          <HotspotList hotspots={HOTSPOT_ESTIMATES} />
+          <div>
+            <SectionTitle title="Budget" />
+            <BudgetProgress
+              achieved={forecast.weeklyAchieved}
+              budget={forecast.weeklyBudget}
+              forecast={forecast.weeklyForecast}
+            />
+          </div>
         </section>
       </div>
     </div>
   );
 }
 
-function Advice({
-  icon,
-  title,
-  value,
-}: {
-  icon: string;
-  title: string;
-  value?: string;
-}) {
+function EmptyForecast() {
   return (
-    <Card className="p-4">
-      <Icon name={icon} className="text-muted-foreground mb-3 size-4" />
-      <p className="text-muted-foreground text-xs">{title}</p>
-      <p className="mt-1 font-semibold">{value}</p>
-    </Card>
+    <div className="px-5 pt-16 text-center">
+      <p className="text-muted-foreground">No location configured yet.</p>
+      <Button asChild className="mt-4">
+        <Link href="/business/onboarding">
+          Set up <Icon name="ArrowRight" />
+        </Link>
+      </Button>
+    </div>
   );
 }

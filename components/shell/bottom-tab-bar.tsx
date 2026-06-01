@@ -4,16 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/ui/icon";
+import { CONSUMER_TABS, type NavTab } from "@/components/shell/nav-tabs";
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { href: "/home", label: "Home", icon: "Home" },
-  { href: "/topics", label: "Topics", icon: "LayoutGrid" },
-  { href: "/explore", label: "Explore", icon: "Compass" },
-  { href: "/settings", label: "Settings", icon: "Settings" },
-];
-
-export function BottomTabBar() {
+export function BottomTabBar({ tabs = CONSUMER_TABS }: { tabs?: NavTab[] }) {
   const pathname = usePathname();
 
   return (
@@ -22,7 +16,7 @@ export function BottomTabBar() {
       className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center lg:hidden"
     >
       <div className="pointer-events-auto mx-4 mb-2 flex w-full max-w-md items-center justify-around rounded-[26px] border border-border/60 bg-card/80 px-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active =
             pathname === tab.href || pathname.startsWith(tab.href + "/");
           return (
