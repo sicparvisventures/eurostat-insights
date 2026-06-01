@@ -273,50 +273,64 @@ export function WeekBars({
   );
   return (
     <Card className="p-4">
-      <div className="flex items-end justify-between gap-1.5" style={{ height: 140 }}>
+      <div className="flex h-44 items-stretch justify-between gap-1.5">
         {week.map((d) => {
           const active = selectedIndex === d.index;
+          const deltaPct = d.baseline
+            ? Math.round((d.revenue / d.baseline - 1) * 100)
+            : 0;
           return (
-          <button
-            key={d.weekday}
-            type="button"
-            onClick={() => onSelectDay?.(d)}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1.5 rounded-lg p-1 transition-colors",
-              onSelectDay && "hover:bg-muted",
-              active && "bg-muted",
-            )}
-          >
-            <div className="relative flex w-full flex-1 items-end justify-center">
-              {d.open && (
-                <div
-                  className="bg-muted-foreground/20 absolute bottom-0 w-full max-w-7 rounded-t-md"
-                  style={{ height: `${(d.baseline / max) * 100}%` }}
-                  title={`${d.weekday} baseline: ${eur(d.baseline)}`}
-                />
-              )}
-              <div
-                className={cn(
-                  "relative w-full max-w-7 rounded-t-md transition-all",
-                  d.isFocus
-                    ? "bg-primary"
-                    : d.open
-                      ? "bg-primary/35"
-                      : "bg-muted",
-                )}
-                style={{ height: `${(d.revenue / max) * 100}%` }}
-                title={`${d.weekday}: ${eur(d.revenue)}`}
-              />
-            </div>
-            <span
+            <button
+              key={d.weekday}
+              type="button"
+              onClick={() => onSelectDay?.(d)}
               className={cn(
-                "text-[10px] font-medium",
-                d.isFocus ? "text-primary" : "text-muted-foreground",
+                "flex h-full min-w-0 flex-1 flex-col items-center gap-2 rounded-lg p-1.5 transition-colors",
+                onSelectDay && "hover:bg-muted",
+                active && "bg-muted",
               )}
             >
-              {d.weekday}
-            </span>
-          </button>
+              <span
+                className={cn(
+                  "min-h-4 text-[10px] font-semibold tabular-nums",
+                  deltaPct >= 0 ? "text-success" : "text-danger",
+                )}
+              >
+                {d.open ? `${deltaPct > 0 ? "+" : ""}${deltaPct}%` : "Closed"}
+              </span>
+              <div className="relative flex min-h-0 w-full flex-1 items-end justify-center">
+                {d.open && (
+                  <div
+                    className="bg-muted-foreground/20 absolute bottom-0 w-full max-w-9 rounded-t-md"
+                    style={{ height: `${(d.baseline / max) * 100}%` }}
+                    title={`${d.weekday} baseline: ${eur(d.baseline)}`}
+                  />
+                )}
+                <div
+                  className={cn(
+                    "relative w-full max-w-9 rounded-t-md transition-all",
+                    d.isFocus
+                      ? "bg-primary"
+                      : d.open
+                        ? "bg-primary/35"
+                        : "bg-muted",
+                  )}
+                  style={{ height: `${(d.revenue / max) * 100}%` }}
+                  title={`${d.weekday}: ${eur(d.revenue)}`}
+                />
+              </div>
+              <span className="text-muted-foreground max-w-full truncate text-[10px] tabular-nums">
+                {d.open ? eur(d.revenue) : "—"}
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-medium",
+                  d.isFocus ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                {d.weekday}
+              </span>
+            </button>
           );
         })}
       </div>
@@ -368,7 +382,7 @@ export function BudgetProgress({
         <MiniStat label="Gap" value={eur(gap)} />
       </div>
       <p className="text-muted-foreground mt-2 text-xs">
-        Baseline is your setup estimate; today includes weather and event context.
+        Baseline is your setup estimate; forecast week includes weather and event context.
       </p>
     </Card>
   );
