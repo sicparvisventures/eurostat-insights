@@ -258,9 +258,13 @@ export function HourlyCurve({ hourly }: { hourly: HourPoint[] }) {
 export function WeekBars({
   week,
   budgetPerOpenDay,
+  selectedIndex,
+  onSelectDay,
 }: {
   week: DayForecast[];
   budgetPerOpenDay?: number;
+  selectedIndex?: number;
+  onSelectDay?: (day: DayForecast) => void;
 }) {
   const max = Math.max(
     ...week.map((d) => Math.max(d.revenue, d.baseline)),
@@ -270,8 +274,19 @@ export function WeekBars({
   return (
     <Card className="p-4">
       <div className="flex items-end justify-between gap-1.5" style={{ height: 140 }}>
-        {week.map((d) => (
-          <div key={d.weekday} className="flex flex-1 flex-col items-center gap-1.5">
+        {week.map((d) => {
+          const active = selectedIndex === d.index;
+          return (
+          <button
+            key={d.weekday}
+            type="button"
+            onClick={() => onSelectDay?.(d)}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1.5 rounded-lg p-1 transition-colors",
+              onSelectDay && "hover:bg-muted",
+              active && "bg-muted",
+            )}
+          >
             <div className="relative flex w-full flex-1 items-end justify-center">
               {d.open && (
                 <div
@@ -301,8 +316,9 @@ export function WeekBars({
             >
               {d.weekday}
             </span>
-          </div>
-        ))}
+          </button>
+          );
+        })}
       </div>
     </Card>
   );

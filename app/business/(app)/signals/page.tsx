@@ -18,26 +18,39 @@ import {
 } from "@/components/business/forecast-date-control";
 import { BUSINESS_SIGNAL_SOURCES, SOURCE_HEALTH } from "@/lib/business/signals";
 import {
-  useActiveLocation,
   useBusinessHasHydrated,
   useBusinessStore,
 } from "@/lib/store/business";
-import { useLocationForecast } from "@/lib/business/use-forecast";
+import { useBusinessContext } from "@/lib/business/context";
+import { useGroupForecast, useLocationForecast } from "@/lib/business/use-forecast";
 import { cn } from "@/lib/utils";
+
+type SignalScope = "all" | string;
 
 export default function BusinessSignalsPage() {
   const hydrated = useBusinessHasHydrated();
+  const group = useBusinessStore((s) => s.group);
   const locations = useBusinessStore((s) => s.locations);
+  const activeId = useBusinessStore((s) => s.activeLocationId);
   const setActive = useBusinessStore((s) => s.setActiveLocation);
-  const active = useActiveLocation();
+  const [scope, setScope] = useState<SignalScope>("all");
   const [forecastDate, setForecastDate] = useState(() => todayInputValue());
   const focusDate = dateFromInput(forecastDate);
-  const { forecast, weather, ctx } = useLocationForecast(active, {
+  const active =
+    scope === "all"
+      ? null
+      : (locations.find((location) => location.id === scope) ??
+        locations.find((location) => location.id === activeId) ??
+        locations[0] ??
+        null);
+  const ctx = useBusinessContext(active?.country ?? group.country);
+  const { forecast, weather } = useLocationForecast(active, {
     date: focusDate,
   });
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
 
   if (!hydrated) return null;
-  if (!active || !forecast) {
+  if (!locations.length) {
     return (
       <div className="px-5 pt-16 text-center">
         <p className="text-muted-foreground">No location configured yet.</p>
@@ -50,31 +63,54 @@ export default function BusinessSignalsPage() {
     );
   }
 
-  const today = weather.data?.today;
+  const weatherDay = weather.data?.days.find((d) => d.date === forecastDate) ?? weather.data?.today;
+  const aggregateModifiers = groupForecast.byLocation.length
+    ? {
+        weather: 0,
+        season: Math.round((ctx.seasonIndex - 1) * 100),
+        weekday: Math.round(
+          groupForecast.byLocation.reduce(
+            (sum, row) => sum + row.forecast.modifiers.weekday,
+            0,
+          ) / groupForecast.byLocation.length,
+        ),
+        event: Math.round(
+          groupForecast.byLocation.reduce(
+            (sum, row) => sum + row.forecast.modifiers.event,
+            0,
+          ) / groupForecast.byLocation.length,
+        ),
+      }
+    : { weather: 0, season: 0, weekday: 0, event: 0 };
+  const activeForecast = scope === "all" ? null : forecast;
+  const modifiers = activeForecast?.modifiers ?? aggregateModifiers;
   const signals = [
     {
       name: "Weather effect",
-      value: forecast.modifiers.weather,
+      value: modifiers.weather,
       unit: "% demand",
-      explanation: today
-        ? `${today.summary}, ${Math.round(today.tempMax)}° and ${today.precipitation.toFixed(1)} mm shape terrace and walk-in.`
-        : "Live weather unavailable for this city.",
+      explanation:
+        scope === "all"
+          ? "Portfolio weather is shown per location; connect city-level forecasts by selecting a site."
+          : weatherDay
+            ? `${weatherDay.summary}, ${Math.round(weatherDay.tempMax)}° and ${weatherDay.precipitation.toFixed(1)} mm shape terrace and walk-in.`
+            : "Live weather unavailable for this city.",
     },
     {
       name: "Tourism season",
-      value: forecast.modifiers.season,
+      value: modifiers.season,
       unit: "% demand",
-      explanation: `${ctx.seasonLabel} — derived from Eurostat hotel-nights seasonality for ${active.country}.`,
+      explanation: `${ctx.seasonLabel} — derived from Eurostat hotel-nights seasonality for ${active?.country ?? group.country}.`,
     },
     {
       name: "Weekday pattern",
-      value: forecast.modifiers.weekday,
+      value: modifiers.weekday,
       unit: "% demand",
       explanation: "Typical hospitality weekday rhythm versus the weekly average.",
     },
     {
       name: "Event spillover",
-      value: forecast.modifiers.event,
+      value: modifiers.event,
       unit: "% demand",
       explanation: "Simulated nearby event gravity. Connect Ticketmaster/UiT for live events.",
     },
@@ -91,19 +127,27 @@ export default function BusinessSignalsPage() {
     <div>
       <AppHeader
         title="Signals"
-        subtitle={`${active.name} · live demand drivers`}
+        subtitle={
+          scope === "all"
+            ? `${locations.length} locations · portfolio demand drivers`
+            : `${active?.name ?? "Location"} · live demand drivers`
+        }
         homeHref="/business/home"
       />
 
       <div className="space-y-7 px-5 pt-2">
-        {locations.length > 1 && (
-          <ChipBar
-            ariaLabel="Location"
-            value={active.id}
-            onChange={setActive}
-            options={locations.map((l) => ({ value: l.id, label: l.name }))}
-          />
-        )}
+        <ChipBar
+          ariaLabel="Signal scope"
+          value={scope}
+          onChange={(value) => {
+            setScope(value);
+            if (value !== "all") setActive(value);
+          }}
+          options={[
+            { value: "all", label: "All locations" },
+            ...locations.map((l) => ({ value: l.id, label: l.name })),
+          ]}
+        />
         <ForecastDateControl
           value={forecastDate}
           onChange={setForecastDate}
@@ -111,7 +155,7 @@ export default function BusinessSignalsPage() {
         />
 
         <section>
-          <SectionTitle title="Today's demand drivers" />
+          <SectionTitle title="Focus-day demand drivers" />
           <div className="divide-border overflow-hidden rounded-2xl border bg-card">
             {signals.map((s) => (
               <div key={s.name} className="border-border border-b p-4 last:border-0">
@@ -129,7 +173,9 @@ export default function BusinessSignalsPage() {
 
         <section>
           <SectionTitle title="7-day weather outlook" />
-          {weather.data?.days?.length ? (
+          {scope === "all" ? (
+            <PortfolioSignalTable locations={groupForecast.byLocation} />
+          ) : weather.data?.days?.length ? (
             <Card className="divide-border divide-y p-0">
               {weather.data.days.slice(0, 7).map((d) => (
                 <div
@@ -211,6 +257,51 @@ function SignalValue({
       {value}
       {pricing ? "%" : "%"}
     </span>
+  );
+}
+
+function PortfolioSignalTable({
+  locations,
+}: {
+  locations: {
+    id: string;
+    name: string;
+    forecast: {
+      demandBand: string;
+      deltaVsNormalPct: number;
+      modifiers: { event: number; weekday: number; season: number; weather: number };
+    };
+  }[];
+}) {
+  const rows = [...locations].sort(
+    (a, b) => a.forecast.deltaVsNormalPct - b.forecast.deltaVsNormalPct,
+  );
+  return (
+    <Card className="divide-border divide-y p-0">
+      {rows.map((row) => (
+        <div key={row.id} className="grid grid-cols-[1fr_auto] gap-3 p-4">
+          <div>
+            <p className="font-semibold">{row.name}</p>
+            <p className="text-muted-foreground text-xs capitalize">
+              {row.forecast.demandBand} · weekday{" "}
+              {row.forecast.modifiers.weekday > 0 ? "+" : ""}
+              {row.forecast.modifiers.weekday}% · event{" "}
+              {row.forecast.modifiers.event > 0 ? "+" : ""}
+              {row.forecast.modifiers.event}%
+            </p>
+          </div>
+          <span
+            className={cn(
+              "text-sm font-bold tabular-nums",
+              row.forecast.deltaVsNormalPct >= 0 ? "text-success" : "text-danger",
+            )}
+          >
+            {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
+            {row.forecast.deltaVsNormalPct}%
+          </span>
+        </div>
+      ))}
+    </Card>
   );
 }
 
