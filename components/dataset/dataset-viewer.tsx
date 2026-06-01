@@ -25,6 +25,7 @@ import {
   rangeToFetchParams,
   type DataRange,
 } from "@/lib/date-range";
+import { cn } from "@/lib/utils";
 
 /** Heuristic value formatter based on the dataset's unit label. */
 function makeFormatter(unit: string | null) {
@@ -169,6 +170,19 @@ function DatasetBody({
   const unit = unitLabel(snapshot);
   const fmt = useMemo(() => makeFormatter(unit), [unit]);
 
+  // Plain-English breakdown of what the dataset measures.
+  const breakdowns = snapshot.dimIds
+    .filter((id) => id !== "time" && id !== "geo")
+    .map((id) => snapshot.dims[id]?.label)
+    .filter((l): l is string => Boolean(l));
+  const updated = snapshot.updated
+    ? new Date(snapshot.updated).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
   // Selectable dimensions: size > 1, excluding time & geo.
   const selectableDims = snapshot.dimIds.filter(
     (id) =>
@@ -233,9 +247,38 @@ function DatasetBody({
 
   return (
     <>
-      {unit && (
-        <p className="text-muted-foreground -mt-2 text-sm">Unit: {unit}</p>
-      )}
+      {/* About — plain-English explanation of the dataset */}
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-xl">
+            <Icon name="Info" className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold leading-tight">About this dataset</h3>
+            <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+              {snapshot.label}
+            </p>
+            <dl className="mt-3 space-y-1.5 text-xs">
+              <AboutRow label="Eurostat code" value={code.toUpperCase()} mono />
+              {unit && <AboutRow label="Unit" value={unit} />}
+              {breakdowns.length > 0 && (
+                <AboutRow label="Broken down by" value={breakdowns.join(" · ")} />
+              )}
+              {hasGeo && <AboutRow label="Geography" value="By country / region" />}
+              {updated && <AboutRow label="Last updated" value={updated} />}
+            </dl>
+            <a
+              className="text-primary mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+              href={`https://ec.europa.eu/eurostat/databrowser/view/${code}/default/table`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Full metadata on Eurostat
+              <Icon name="ArrowUpRight" className="size-3.5" />
+            </a>
+          </div>
+        </div>
+      </Card>
 
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -381,5 +424,24 @@ function DatasetBody({
         </a>
       </p>
     </>
+  );
+}
+
+function AboutRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex gap-3">
+      <dt className="text-muted-foreground/70 w-28 shrink-0">{label}</dt>
+      <dd className={cn("text-foreground flex-1", mono && "font-mono uppercase")}>
+        {value}
+      </dd>
+    </div>
   );
 }

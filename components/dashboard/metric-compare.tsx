@@ -2,8 +2,12 @@
 
 import { useMemo } from "react";
 import { useMetricByCountry } from "@/lib/hooks/use-eurostat";
-import { timeSeries } from "@/lib/eurostat/jsonstat";
-import { formatMetricValue, type Metric } from "@/lib/eurostat/registry";
+import { latestByGeo } from "@/lib/eurostat/jsonstat";
+import {
+  formatMetricValue,
+  metricUnitSuffix,
+  type Metric,
+} from "@/lib/eurostat/registry";
 import { EU_COUNTRY_CODES } from "@/lib/eurostat/constants";
 import type { DataRange } from "@/lib/date-range";
 import { EuropeChoropleth } from "@/components/charts/europe-choropleth";
@@ -31,15 +35,11 @@ export function MetricCompare({
     const values = new Map<string, number>();
     const bars: { code: string; label: string; value: number }[] = [];
     let latestTime = "";
-    for (const g of data.dims.geo?.categories ?? []) {
-      if (!EU_COUNTRY_CODES.has(g.code)) continue;
-      // Latest non-null value for this country across the fetched periods.
-      const series = timeSeries(data, { ...metric.filters, geo: g.code });
-      const last = series.at(-1);
-      if (!last) continue;
-      values.set(g.code, last.value);
-      bars.push({ code: g.code, label: g.label, value: last.value });
-      if (last.time > latestTime) latestTime = last.time;
+    for (const [code, point] of latestByGeo(data, metric.filters)) {
+      if (!EU_COUNTRY_CODES.has(code)) continue;
+      values.set(code, point.value);
+      bars.push({ code, label: point.label, value: point.value });
+      if (point.time > latestTime) latestTime = point.time;
     }
     return { values, bars, time: latestTime };
   }, [data, metric.filters]);
@@ -55,7 +55,9 @@ export function MetricCompare({
     <div className="space-y-5">
       <div>
         <p className="text-muted-foreground mb-2 text-xs">
-          {metric.title} across Europe · {time}
+          {metric.title} across Europe
+          {metricUnitSuffix(metric) ? ` · ${metricUnitSuffix(metric)}` : ""} ·{" "}
+          {time}
         </p>
         <EuropeChoropleth
           values={values}

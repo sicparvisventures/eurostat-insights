@@ -5,6 +5,7 @@ import { useMetricSeries } from "@/lib/hooks/use-eurostat";
 import { timeSeries } from "@/lib/eurostat/jsonstat";
 import {
   formatMetricValue,
+  metricUnitSuffix,
   type Metric,
 } from "@/lib/eurostat/registry";
 import type { DataRange } from "@/lib/date-range";
@@ -74,8 +75,15 @@ export function StatCard({
       ) : (
         <>
           <div className="flex items-end justify-between gap-2">
-            <div className="text-2xl font-bold tracking-tight tabular-nums">
-              {formatMetricValue(metric, latest.value)}
+            <div className="min-w-0">
+              <div className="text-2xl font-bold tracking-tight tabular-nums">
+                {formatMetricValue(metric, latest.value)}
+              </div>
+              {metricUnitSuffix(metric) && (
+                <p className="text-muted-foreground/70 truncate text-[11px]">
+                  {metricUnitSuffix(metric)}
+                </p>
+              )}
             </div>
             <DeltaBadge
               metric={metric}

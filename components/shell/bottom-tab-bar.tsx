@@ -19,7 +19,7 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center"
+      className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center lg:hidden"
     >
       <div className="pointer-events-auto mx-4 mb-2 flex w-full max-w-md items-center justify-around rounded-[26px] border border-border/60 bg-card/80 px-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl">
         {TABS.map((tab) => {

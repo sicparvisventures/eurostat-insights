@@ -15,6 +15,7 @@ export default function TopicsPage() {
     <div>
       <AppHeader title="Topics" subtitle="Curated European dashboards" />
       <div className="space-y-4 px-5 pt-2">
+        <div className="grid gap-4 lg:grid-cols-2">
         {TOPICS.map((t) => (
           <Link
             key={t.slug}
@@ -62,6 +63,7 @@ export default function TopicsPage() {
             </div>
           </Link>
         ))}
+        </div>
 
         <Link
           href="/explore"

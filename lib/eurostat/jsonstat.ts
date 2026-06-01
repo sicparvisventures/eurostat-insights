@@ -166,3 +166,26 @@ export function unitLabel(ds: Dataset): string | null {
   const unit = ds.dims["unit"];
   return unit?.categories[0]?.label ?? null;
 }
+
+export interface GeoLatest {
+  value: number;
+  time: string;
+  label: string;
+}
+
+/**
+ * The latest non-null value per geography, picked across all fetched periods.
+ * Monthly/annual Eurostat series often lag unevenly per country, so we take the
+ * most recent point that actually has a value for each one.
+ */
+export function latestByGeo(
+  ds: Dataset,
+  fixed: Record<string, string> = {},
+): Map<string, GeoLatest> {
+  const out = new Map<string, GeoLatest>();
+  for (const g of ds.dims["geo"]?.categories ?? []) {
+    const last = timeSeries(ds, { ...fixed, geo: g.code }).at(-1);
+    if (last) out.set(g.code, { ...last, label: g.label });
+  }
+  return out;
+}

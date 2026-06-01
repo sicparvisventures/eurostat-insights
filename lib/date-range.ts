@@ -12,7 +12,7 @@ export type DataRange = {
   end?: string;
 };
 
-export const DEFAULT_DATA_RANGE: DataRange = { preset: "last-year" };
+export const DEFAULT_DATA_RANGE: DataRange = { preset: "5y" };
 
 export const RANGE_PRESETS: {
   value: RangePreset;

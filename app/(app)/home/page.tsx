@@ -53,7 +53,11 @@ export default function HomePage() {
       <AppHeader
         title={`${greeting()}${name ? `, ${name}` : ""}`}
         subtitle={today}
-        action={<ThemeToggle />}
+        action={
+          <div className="lg:hidden">
+            <ThemeToggle />
+          </div>
+        }
       />
 
       <div className="space-y-7 px-5 pt-2">
@@ -71,7 +75,6 @@ export default function HomePage() {
         {/* Spotlight */}
         <section>
           <SectionHeader
-            icon="Sparkles"
             title="Indicator of the day"
             href={`/topics/${spotlight.topicSlug}`}
           />
@@ -86,8 +89,8 @@ export default function HomePage() {
         {/* Favorites */}
         {favorites.length > 0 && (
           <section>
-            <SectionHeader icon="Star" title="Your favourites" />
-            <div className="grid grid-cols-2 gap-3">
+            <SectionHeader title="Your favourites" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {favorites
                 .map(findMetric)
                 .filter((m): m is NonNullable<typeof m> => Boolean(m))
@@ -112,7 +115,6 @@ export default function HomePage() {
         {activeTopics.map((topic) => (
           <section key={topic.slug}>
             <SectionHeader
-              icon={topic.icon}
               title={topic.title}
               href={`/topics/${topic.slug}`}
             />
@@ -158,20 +160,15 @@ export default function HomePage() {
 }
 
 function SectionHeader({
-  icon,
   title,
   href,
 }: {
-  icon: string;
   title: string;
   href?: string;
 }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon name={icon} className="text-primary size-4" />
-        <h2 className="font-semibold tracking-tight">{title}</h2>
-      </div>
+      <h2 className="font-semibold tracking-tight">{title}</h2>
       {href && (
         <Link
           href={href}

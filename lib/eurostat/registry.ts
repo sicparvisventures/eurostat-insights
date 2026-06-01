@@ -337,6 +337,18 @@ export function findMetric(id: string) {
   return ALL_METRICS.find((m) => m.id === id);
 }
 
+/**
+ * The unit to display alongside a value. Returns null when the formatted value
+ * already carries its unit (percent → "%", currency → "€"), so we never show a
+ * redundant label.
+ */
+export function metricUnitSuffix(
+  metric: Pick<Metric, "format" | "unit">,
+): string | null {
+  if (metric.format === "percent" || metric.format === "currency") return null;
+  return metric.unit;
+}
+
 /** Format a metric value for display using its format spec. */
 export function formatMetricValue(
   metric: Pick<Metric, "format" | "decimals" | "scale" | "unit">,

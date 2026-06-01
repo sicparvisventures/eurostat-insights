@@ -34,7 +34,7 @@ export function AppHeader({
             <Icon name="ChevronLeft" className="size-5" />
           </button>
         ) : (
-          <Link href={homeHref} aria-label="Home">
+          <Link href={homeHref} aria-label="Home" className="lg:hidden">
             <Logo size={34} />
           </Link>
         )}

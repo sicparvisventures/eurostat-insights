@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useMetricSeries } from "@/lib/hooks/use-eurostat";
 import { timeSeries } from "@/lib/eurostat/jsonstat";
-import { formatMetricValue, type Metric } from "@/lib/eurostat/registry";
+import {
+  formatMetricValue,
+  metricUnitSuffix,
+  type Metric,
+} from "@/lib/eurostat/registry";
 import { countryName } from "@/lib/eurostat/constants";
 import type { DataRange } from "@/lib/date-range";
 import { Card } from "@/components/ui/card";
@@ -62,10 +66,15 @@ export function MetricPanel({
         <EmptyState message="No data for this country and indicator." />
       ) : (
         <>
-          <div className="mt-2 flex items-end gap-3">
+          <div className="mt-2 flex items-end gap-2">
             <span className="text-3xl font-bold tracking-tight tabular-nums">
               {formatMetricValue(metric, latest.value)}
             </span>
+            {metricUnitSuffix(metric) && (
+              <span className="text-muted-foreground mb-1 text-xs font-medium">
+                {metricUnitSuffix(metric)}
+              </span>
+            )}
             <DeltaBadge
               metric={metric}
               current={latest.value}

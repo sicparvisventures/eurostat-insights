@@ -112,5 +112,14 @@ export function searchCatalog(
     filtered = [...filtered].sort((a, b) => b.values - a.values);
   }
 
-  return { results: filtered.slice(0, limit), total: filtered.length, themes };
+  // The TOC lists some datasets under multiple themes; collapse to unique codes
+  // (keeping the best-ranked occurrence) so results carry stable React keys.
+  const seen = new Set<string>();
+  const deduped = filtered.filter((d) => {
+    if (seen.has(d.code)) return false;
+    seen.add(d.code);
+    return true;
+  });
+
+  return { results: deduped.slice(0, limit), total: deduped.length, themes };
 }

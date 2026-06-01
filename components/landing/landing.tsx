@@ -18,8 +18,8 @@ export function Landing() {
   const isBusiness = mode === "business";
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-2xl">
-      <header className="pt-safe flex items-center justify-between px-5 py-4">
+    <div className="mx-auto min-h-dvh w-full max-w-5xl">
+      <header className="pt-safe flex items-center justify-between px-5 py-4 lg:px-8">
         <div className="flex items-center gap-2.5">
           <Logo size={30} />
           <span className="text-[15px] font-semibold tracking-tight">
@@ -29,18 +29,20 @@ export function Landing() {
         <ThemeToggle />
       </header>
 
-      <main className="px-5 pb-16">
+      <main className="px-5 pb-16 lg:px-8">
+        <div className="lg:grid lg:grid-cols-2 lg:items-center lg:gap-14 lg:pt-6">
+        <div>
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate="show"
           custom={0}
-          className="mt-7"
+          className="mt-7 lg:mt-0"
         >
           <Segmented
             value={mode}
             onChange={setMode}
-            className="w-full justify-center"
+            className="w-full justify-center lg:w-auto lg:justify-start"
             options={[
               { value: "consumer", label: "Consumer" },
               { value: "business", label: "Business" },
@@ -66,7 +68,7 @@ export function Landing() {
           initial="hidden"
           animate="show"
           custom={2}
-          className="mt-4 text-[2.6rem] font-semibold leading-[1.08] tracking-tight"
+          className="mt-4 text-[2.6rem] font-semibold leading-[1.08] tracking-tight lg:text-[3.4rem]"
         >
           {isBusiness ? (
             <>
@@ -114,16 +116,18 @@ export function Landing() {
             </Link>
           </Button>
         </motion.div>
+        </div>
 
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate="show"
           custom={5}
-          className="mt-10"
+          className="mt-10 lg:mt-0"
         >
           {isBusiness ? <BusinessPreview /> : <IndexPreview />}
         </motion.div>
+        </div>
 
         <motion.div
           variants={fadeUp}
