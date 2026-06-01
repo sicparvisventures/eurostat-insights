@@ -9,7 +9,36 @@ import {
   type LocationConfig,
   type PriceTier,
 } from "@/lib/store/business";
+import { citiesForCountry } from "@/lib/business/cities";
 import { cn } from "@/lib/utils";
+
+/** City dropdown (no free text) so weather geocoding always resolves. */
+export function CitySelect({
+  country,
+  value,
+  onChange,
+}: {
+  country: string;
+  value: string;
+  onChange: (city: string) => void;
+}) {
+  const cities = citiesForCountry(country);
+  const options = cities.includes(value) ? cities : [value, ...cities];
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="field-input"
+      aria-label="City"
+    >
+      {options.map((c) => (
+        <option key={c} value={c}>
+          {c}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export const BUSINESS_TYPES: {
   value: BusinessType;

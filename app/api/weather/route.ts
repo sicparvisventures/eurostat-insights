@@ -39,9 +39,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing `city`." }, { status: 400 });
   }
 
+  // Eurostat uses EL/UK; Open-Meteo expects ISO-3166 GR/GB.
+  const geoCountry =
+    country === "EL" ? "GR" : country === "UK" ? "GB" : country;
+
   try {
     const geoUrl = `${GEOCODE}?name=${encodeURIComponent(city)}&count=1&language=en&format=json${
-      country ? `&country=${encodeURIComponent(country)}` : ""
+      geoCountry ? `&country=${encodeURIComponent(geoCountry)}` : ""
     }`;
     const geoRes = await fetch(geoUrl, { next: { revalidate: 86400 } });
     const geo = await geoRes.json();

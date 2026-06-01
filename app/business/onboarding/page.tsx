@@ -8,14 +8,17 @@ import { Icon } from "@/components/ui/icon";
 import { Logo } from "@/components/brand/logo";
 import {
   BusinessTypePicker,
+  CitySelect,
   LocationSliders,
 } from "@/components/business/location-form";
 import { eur } from "@/components/business/business-widgets";
 import {
+  cloneLocation,
   newLocation,
   useBusinessStore,
   type LocationConfig,
 } from "@/lib/store/business";
+import { citiesForCountry } from "@/lib/business/cities";
 import { computeForecast } from "@/lib/business/forecast";
 import { EU_COUNTRIES } from "@/lib/eurostat/constants";
 import { cn } from "@/lib/utils";
@@ -28,32 +31,44 @@ export default function BusinessOnboardingPage() {
   const [step, setStep] = useState(0);
   const [groupName, setGroupName] = useState("");
   const [country, setCountry] = useState("BE");
-  const [draft, setDraft] = useState<LocationConfig>(() => newLocation());
+  const [built, setBuilt] = useState<LocationConfig[]>([]);
+  const [draft, setDraft] = useState<LocationConfig>(() =>
+    newLocation({ city: citiesForCountry("BE")[0] }),
+  );
 
   const { setGroup, addLocation, completeOnboarding } = useBusinessStore();
 
   const update = (patch: Partial<LocationConfig>) =>
     setDraft((d) => ({ ...d, ...patch }));
 
+  function changeCountry(c: string) {
+    setCountry(c);
+    setDraft((d) => ({ ...d, country: c, city: citiesForCountry(c)[0] }));
+  }
+
   const isLast = step === STEPS.length - 1;
-  const canProceed =
-    step === 1 ? draft.name.trim().length > 0 && draft.city.trim().length > 0 : true;
+  const canProceed = step === 1 ? draft.name.trim().length > 0 : true;
 
   const preview = useMemo(
     () => computeForecast({ ...draft, country }, { seasonIndex: 1 }),
     [draft, country],
   );
 
-  function finish() {
-    setGroup({ name: groupName || draft.name || "My group", country });
-    addLocation({ ...draft, country, name: draft.name || "Main location" });
-    completeOnboarding();
-    router.push("/business/home");
+  function addAnother() {
+    setBuilt((b) => [...b, { ...draft, country }]);
+    // Copy the economics into a fresh draft so similar sites are fast to add.
+    setDraft((d) => cloneLocation(d, { name: "", country }));
+    setStep(1);
   }
 
-  function next() {
-    if (isLast) finish();
-    else setStep((s) => s + 1);
+  function finish() {
+    const all = [...built, draft].filter((l) => l.name.trim().length > 0);
+    setGroup({ name: groupName || all[0]?.name || "My group", country });
+    (all.length ? all : [{ ...draft, name: "Main location" }]).forEach((l) =>
+      addLocation({ ...l, country }),
+    );
+    completeOnboarding();
+    router.push("/business/home");
   }
 
   return (
@@ -93,7 +108,7 @@ export default function BusinessOnboardingPage() {
             {step === 0 && (
               <Step
                 title="Set up your group"
-                subtitle="A group can hold one location or a whole district. We start the forecast from the average restaurant in your country, then tune it to you."
+                subtitle="A group can hold one site or a whole district. We start from the average restaurant in your country, then tune it to you and add the outside intelligence."
               >
                 <Field label="Group / company name">
                   <input
@@ -106,7 +121,7 @@ export default function BusinessOnboardingPage() {
                 <Field label="Country">
                   <select
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => changeCountry(e.target.value)}
                     className="field-input"
                   >
                     {EU_COUNTRIES.map((c) => (
@@ -121,8 +136,12 @@ export default function BusinessOnboardingPage() {
 
             {step === 1 && (
               <Step
-                title="Add your first location"
-                subtitle="The city anchors live weather and local demand. Add more sites later from Locations."
+                title={
+                  built.length
+                    ? `Add location ${built.length + 1}`
+                    : "Add your first location"
+                }
+                subtitle="The city anchors live weather and local demand. You can add more sites in a moment."
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Location name">
@@ -134,11 +153,10 @@ export default function BusinessOnboardingPage() {
                     />
                   </Field>
                   <Field label="City">
-                    <input
+                    <CitySelect
+                      country={country}
                       value={draft.city}
-                      onChange={(e) => update({ city: e.target.value })}
-                      placeholder="Gent"
-                      className="field-input"
+                      onChange={(city) => update({ city })}
                     />
                   </Field>
                 </div>
@@ -163,8 +181,8 @@ export default function BusinessOnboardingPage() {
 
             {step === 3 && (
               <Step
-                title="Your forecast is ready"
-                subtitle="A normal-day baseline from your setup. Live weather, season and events adjust it daily inside the command center."
+                title="Forecast ready"
+                subtitle="A normal-day baseline from your setup. Live weather, season and events adjust it daily in the command center."
               >
                 <div className="border-border bg-card rounded-2xl border p-5">
                   <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
@@ -180,20 +198,50 @@ export default function BusinessOnboardingPage() {
                       label="Labour"
                       value={`${(preview.laborRatio * 100).toFixed(0)}%`}
                     />
-                    <Preview
-                      label="Staff hours"
-                      value={`${preview.laborHours}h`}
-                    />
-                    <Preview
-                      label="Productivity"
-                      value={`${eur(preview.productivity)}/h`}
-                    />
-                    <Preview
-                      label="Weekly budget"
-                      value={eur(preview.weeklyBudget)}
-                    />
                   </div>
                 </div>
+
+                {built.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-muted-foreground mb-2 text-xs font-medium">
+                      Already added
+                    </p>
+                    <div className="space-y-2">
+                      {built.map((l, i) => (
+                        <div
+                          key={l.id}
+                          className="border-border bg-card flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm"
+                        >
+                          <Icon
+                            name="Store"
+                            className="text-muted-foreground size-4"
+                          />
+                          <span className="flex-1 font-medium">
+                            {l.name} · {l.city}
+                          </span>
+                          <button
+                            onClick={() =>
+                              setBuilt((b) => b.filter((_, j) => j !== i))
+                            }
+                            aria-label={`Remove ${l.name}`}
+                            className="text-muted-foreground hover:text-danger"
+                          >
+                            <Icon name="X" className="size-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  variant="secondary"
+                  className="mt-4 w-full"
+                  onClick={addAnother}
+                  disabled={!draft.name.trim()}
+                >
+                  <Icon name="Plus" /> Add another location (copies this setup)
+                </Button>
               </Step>
             )}
           </motion.div>
@@ -212,12 +260,19 @@ export default function BusinessOnboardingPage() {
           </Button>
         )}
         <Button size="lg" className="flex-1" onClick={next} disabled={!canProceed}>
-          {isLast ? "Enter command center" : "Continue"}
+          {isLast
+            ? `Enter command center${built.length ? ` · ${built.length + 1} sites` : ""}`
+            : "Continue"}
           <Icon name={isLast ? "Sparkles" : "ArrowRight"} />
         </Button>
       </div>
     </div>
   );
+
+  function next() {
+    if (isLast) finish();
+    else setStep((s) => s + 1);
+  }
 }
 
 function Step({

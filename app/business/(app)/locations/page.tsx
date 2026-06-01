@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import {
   BusinessTypePicker,
+  CitySelect,
   LocationSliders,
 } from "@/components/business/location-form";
 import {
@@ -21,6 +22,7 @@ import {
   useBusinessStore,
   type LocationConfig,
 } from "@/lib/store/business";
+import { citiesForCountry } from "@/lib/business/cities";
 import { useBusinessContext } from "@/lib/business/context";
 import { useGroupForecast } from "@/lib/business/use-forecast";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ export default function BusinessLocationsPage() {
   const activeId = useBusinessStore((s) => s.activeLocationId);
   const addLocation = useBusinessStore((s) => s.addLocation);
   const removeLocation = useBusinessStore((s) => s.removeLocation);
+  const duplicateLocation = useBusinessStore((s) => s.duplicateLocation);
   const ctx = useBusinessContext(group.country);
   const groupForecast = useGroupForecast(locations, ctx.seasonIndex);
 
@@ -135,15 +138,25 @@ export default function BusinessLocationsPage() {
                         {loc.priceTier}
                       </p>
                     </div>
-                    {locations.length > 1 && (
+                    <div className="-mr-1 -mt-1 flex shrink-0 items-center">
                       <button
-                        onClick={() => removeLocation(row.id)}
-                        aria-label={`Remove ${row.name}`}
-                        className="text-muted-foreground hover:text-danger -mr-1 -mt-1 flex size-8 items-center justify-center rounded-full"
+                        onClick={() => duplicateLocation(row.id)}
+                        aria-label={`Copy ${row.name}`}
+                        title="Copy config"
+                        className="text-muted-foreground hover:text-foreground flex size-8 items-center justify-center rounded-full"
                       >
-                        <Icon name="Trash2" className="size-4" />
+                        <Icon name="Layers" className="size-4" />
                       </button>
-                    )}
+                      {locations.length > 1 && (
+                        <button
+                          onClick={() => removeLocation(row.id)}
+                          aria-label={`Remove ${row.name}`}
+                          className="text-muted-foreground hover:text-danger flex size-8 items-center justify-center rounded-full"
+                        >
+                          <Icon name="Trash2" className="size-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <Mini label="Today" value={eur(row.forecast.revenue)} />
@@ -204,7 +217,7 @@ function AddLocation({
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<LocationConfig>(() =>
-    newLocation({ country }),
+    newLocation({ country, city: citiesForCountry(country)[0] }),
   );
   const update = (patch: Partial<LocationConfig>) =>
     setDraft((d) => ({ ...d, ...patch }));
@@ -237,11 +250,10 @@ function AddLocation({
           <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
             City
           </span>
-          <input
+          <CitySelect
+            country={country}
             value={draft.city}
-            onChange={(e) => update({ city: e.target.value })}
-            placeholder="Antwerp"
-            className="field-input"
+            onChange={(city) => update({ city })}
           />
         </label>
       </div>

@@ -10,9 +10,11 @@ import { ChipBar } from "@/components/ui/chip-bar";
 import { Icon } from "@/components/ui/icon";
 import {
   BusinessTypePicker,
+  CitySelect,
   LocationSliders,
 } from "@/components/business/location-form";
 import { SectionTitle } from "@/components/business/business-widgets";
+import { citiesForCountry } from "@/lib/business/cities";
 import {
   useActiveLocation,
   useBusinessHasHydrated,
@@ -28,6 +30,7 @@ export default function BusinessSettingsPage() {
   const setGroup = useBusinessStore((s) => s.setGroup);
   const setActive = useBusinessStore((s) => s.setActiveLocation);
   const updateLocation = useBusinessStore((s) => s.updateLocation);
+  const duplicateLocation = useBusinessStore((s) => s.duplicateLocation);
   const resetBusiness = useBusinessStore((s) => s.resetBusiness);
   const active = useActiveLocation();
 
@@ -95,7 +98,7 @@ export default function BusinessSettingsPage() {
               />
             )}
             <Card className="space-y-5 p-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <label className="block">
                   <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
                     Name
@@ -110,14 +113,33 @@ export default function BusinessSettingsPage() {
                 </label>
                 <label className="block">
                   <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
-                    City
+                    Country
                   </span>
-                  <input
-                    value={active.city}
+                  <select
+                    value={active.country}
                     onChange={(e) =>
-                      updateLocation(active.id, { city: e.target.value })
+                      updateLocation(active.id, {
+                        country: e.target.value,
+                        city: citiesForCountry(e.target.value)[0],
+                      })
                     }
                     className="field-input"
+                  >
+                    {EU_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-muted-foreground mb-1.5 block text-xs font-medium">
+                    City
+                  </span>
+                  <CitySelect
+                    country={active.country}
+                    value={active.city}
+                    onChange={(city) => updateLocation(active.id, { city })}
                   />
                 </label>
               </div>
@@ -131,6 +153,13 @@ export default function BusinessSettingsPage() {
                 value={active}
                 onChange={(patch) => updateLocation(active.id, patch)}
               />
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => duplicateLocation(active.id)}
+              >
+                <Icon name="Layers" /> Duplicate this location
+              </Button>
             </Card>
           </section>
         ) : (

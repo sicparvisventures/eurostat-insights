@@ -50,6 +50,7 @@ interface BusinessState {
   setGroup: (patch: Partial<BusinessGroup>) => void;
   addLocation: (location: LocationConfig) => void;
   updateLocation: (id: string, patch: Partial<LocationConfig>) => void;
+  duplicateLocation: (id: string) => void;
   removeLocation: (id: string) => void;
   setActiveLocation: (id: string) => void;
   completeOnboarding: () => void;
@@ -97,6 +98,14 @@ export function newLocation(
   };
 }
 
+/** Copy a location's config under a fresh id (used by "copy config"). */
+export function cloneLocation(
+  src: LocationConfig,
+  patch: Partial<LocationConfig> = {},
+): LocationConfig {
+  return { ...src, id: nextId(), ...patch };
+}
+
 export const DEFAULT_GROUP: BusinessGroup = { name: "", country: "BE" };
 
 export const useBusinessStore = create<BusinessState>()(
@@ -119,6 +128,20 @@ export const useBusinessStore = create<BusinessState>()(
             l.id === id ? { ...l, ...patch } : l,
           ),
         })),
+      duplicateLocation: (id) =>
+        set((state) => {
+          const src = state.locations.find((l) => l.id === id);
+          if (!src) return state;
+          const copy: LocationConfig = {
+            ...src,
+            id: nextId(),
+            name: `${src.name} copy`,
+          };
+          const idx = state.locations.findIndex((l) => l.id === id);
+          const locations = [...state.locations];
+          locations.splice(idx + 1, 0, copy);
+          return { locations, activeLocationId: copy.id };
+        }),
       removeLocation: (id) =>
         set((state) => {
           const locations = state.locations.filter((l) => l.id !== id);
