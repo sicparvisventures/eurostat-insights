@@ -246,17 +246,28 @@ export function WeekBars({
   week: DayForecast[];
   budgetPerOpenDay?: number;
 }) {
-  const max = Math.max(...week.map((d) => d.revenue), budgetPerOpenDay ?? 0, 1);
+  const max = Math.max(
+    ...week.map((d) => Math.max(d.revenue, d.baseline)),
+    budgetPerOpenDay ?? 0,
+    1,
+  );
   return (
     <Card className="p-4">
       <div className="flex items-end justify-between gap-1.5" style={{ height: 140 }}>
         {week.map((d) => (
           <div key={d.weekday} className="flex flex-1 flex-col items-center gap-1.5">
-            <div className="flex w-full flex-1 items-end justify-center">
+            <div className="relative flex w-full flex-1 items-end justify-center">
+              {d.open && (
+                <div
+                  className="bg-muted-foreground/20 absolute bottom-0 w-full max-w-7 rounded-t-md"
+                  style={{ height: `${(d.baseline / max) * 100}%` }}
+                  title={`${d.weekday} baseline: ${eur(d.baseline)}`}
+                />
+              )}
               <div
                 className={cn(
-                  "w-full max-w-7 rounded-t-md transition-all",
-                  d.isToday
+                  "relative w-full max-w-7 rounded-t-md transition-all",
+                  d.isFocus
                     ? "bg-primary"
                     : d.open
                       ? "bg-primary/35"
@@ -269,7 +280,7 @@ export function WeekBars({
             <span
               className={cn(
                 "text-[10px] font-medium",
-                d.isToday ? "text-primary" : "text-muted-foreground",
+                d.isFocus ? "text-primary" : "text-muted-foreground",
               )}
             >
               {d.weekday}
@@ -282,29 +293,37 @@ export function WeekBars({
 }
 
 export function BudgetProgress({
-  achieved,
-  budget,
+  target,
   forecast,
+  deltaPct,
 }: {
-  achieved: number;
-  budget: number;
+  target: number;
   forecast: number;
+  deltaPct: number;
 }) {
-  const pct = budget ? Math.min(100, Math.round((achieved / budget) * 100)) : 0;
-  const fpct = budget ? Math.min(100, Math.round((forecast / budget) * 100)) : 0;
-  const remaining = Math.max(0, budget - achieved);
+  const pct = target ? Math.min(140, Math.round((forecast / target) * 100)) : 0;
+  const gap = forecast - target;
   return (
     <Card className="p-5">
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="font-semibold">Weekly budget</p>
-        <p className="text-muted-foreground text-sm tabular-nums">
-          {pct}% achieved
+        <p className="font-semibold">Weekly outlook</p>
+        <p
+          className={cn(
+            "text-sm font-semibold tabular-nums",
+            deltaPct > 0
+              ? "text-success"
+              : deltaPct < 0
+                ? "text-danger"
+                : "text-muted-foreground",
+          )}
+        >
+          {deltaPct > 0 ? "+" : ""}
+          {deltaPct}% vs baseline
         </p>
       </div>
       <div className="bg-muted relative h-3 overflow-hidden rounded-full">
         <div
-          className="bg-primary/30 absolute inset-y-0 left-0 rounded-full"
-          style={{ width: `${fpct}%` }}
+          className="bg-muted-foreground/25 absolute inset-y-0 left-0 w-full rounded-full"
         />
         <div
           className="bg-primary absolute inset-y-0 left-0 rounded-full"
@@ -312,12 +331,12 @@ export function BudgetProgress({
         />
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-        <MiniStat label="Achieved" value={eur(achieved)} />
         <MiniStat label="Forecast wk" value={eur(forecast)} />
-        <MiniStat label="Budget" value={eur(budget)} />
+        <MiniStat label="Baseline" value={eur(target)} />
+        <MiniStat label="Gap" value={eur(gap)} />
       </div>
       <p className="text-muted-foreground mt-2 text-xs">
-        {eur(remaining)} remaining to budget.
+        Baseline is your setup estimate; today includes weather and event context.
       </p>
     </Card>
   );

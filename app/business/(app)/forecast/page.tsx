@@ -141,9 +141,9 @@ export default function BusinessForecastPage() {
           <div>
             <SectionTitle title="Budget" />
             <BudgetProgress
-              achieved={forecast.weeklyAchieved}
-              budget={forecast.weeklyBudget}
+              target={forecast.weeklyTarget}
               forecast={forecast.weeklyForecast}
+              deltaPct={forecast.weeklyDeltaPct}
             />
           </div>
         </section>

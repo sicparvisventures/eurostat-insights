@@ -50,10 +50,10 @@ export interface HourPoint {
 export interface DayForecast {
   weekday: string;
   index: number; // 0 Mon … 6 Sun
-  revenue: number;
+  revenue: number; // forecast (focus day carries weather/event intelligence)
+  baseline: number; // setup baseline (season + weekday only)
   covers: number;
-  isToday: boolean;
-  isPast: boolean;
+  isFocus: boolean;
   open: boolean;
 }
 
@@ -72,10 +72,12 @@ export interface LocationForecast {
   dayparts: DaypartForecast[];
   hourly: HourPoint[];
   week: DayForecast[];
-  weeklyBudget: number;
-  weeklyAchieved: number;
+  /** Setup baseline for the week (no outside intelligence). */
+  weeklyTarget: number;
+  /** Week with intelligence applied to the focus day. */
   weeklyForecast: number;
-  budgetProgressPct: number;
+  weeklyDeltaPct: number;
+  focusWeekday: string;
   modifiers: { weather: number; season: number; event: number; weekday: number };
 }
 
@@ -227,33 +229,26 @@ export function computeForecast(
     };
   });
 
-  // Week pattern: budget = normal expected week; forecast applies today's context.
+  // Week pattern. Baseline = setup estimate (season + weekday). The focus day
+  // additionally carries the outside intelligence (weather + events).
   const open = (i: number) => i < loc.openDays;
   const week: DayForecast[] = WEEKDAYS.map((wd, i) => {
-    const isToday = i === todayIdx;
-    const dayCombined = WEEKDAY_MULT[i] * season * (isToday ? wFactor * event : 1);
-    const r = open(i) ? normalRevenue * dayCombined : 0;
+    const isFocus = i === todayIdx;
+    const baseCombined = WEEKDAY_MULT[i] * season;
+    const fcCombined = baseCombined * (isFocus ? wFactor * event : 1);
     return {
       weekday: wd,
       index: i,
-      revenue: roundTo(r),
-      covers: open(i) ? Math.round(normalCovers * dayCombined) : 0,
-      isToday,
-      isPast: i < todayIdx,
+      revenue: roundTo(open(i) ? normalRevenue * fcCombined : 0),
+      baseline: roundTo(open(i) ? normalRevenue * baseCombined : 0),
+      covers: open(i) ? Math.round(normalCovers * fcCombined) : 0,
+      isFocus,
       open: open(i),
     };
   });
 
-  const weeklyBudget = roundTo(
-    WEEKDAYS.reduce(
-      (a, _, i) => a + (open(i) ? normalRevenue * WEEKDAY_MULT[i] * season : 0),
-      0,
-    ),
-  );
+  const weeklyTarget = roundTo(week.reduce((a, d) => a + d.baseline, 0));
   const weeklyForecast = roundTo(week.reduce((a, d) => a + d.revenue, 0));
-  const weeklyAchieved = roundTo(
-    week.filter((d) => d.isPast).reduce((a, d) => a + d.revenue, 0),
-  );
 
   const laborCost = laborTotalHours * loc.laborHourCost;
   const demand = clamp(Math.round(50 + (50 * (combined - 1)) / 0.6), 2, 99);
@@ -278,12 +273,12 @@ export function computeForecast(
     dayparts,
     hourly,
     week,
-    weeklyBudget,
-    weeklyAchieved,
+    weeklyTarget,
     weeklyForecast,
-    budgetProgressPct: weeklyBudget
-      ? Math.round((weeklyAchieved / weeklyBudget) * 100)
+    weeklyDeltaPct: weeklyTarget
+      ? Math.round((weeklyForecast / weeklyTarget - 1) * 100)
       : 0,
+    focusWeekday: WEEKDAYS[todayIdx],
     modifiers: {
       weather: Math.round((wFactor - 1) * 100),
       season: Math.round((season - 1) * 100),
@@ -299,7 +294,7 @@ export interface GroupForecast {
   covers: number;
   laborCost: number;
   laborRatio: number;
-  weeklyBudget: number;
+  weeklyTarget: number;
   weeklyForecast: number;
   avgTicket: number;
   byLocation: { id: string; name: string; forecast: LocationForecast }[];
@@ -316,8 +311,8 @@ export function computeGroupForecast(
     covers,
     laborCost: roundTo(laborCost),
     laborRatio: revenue ? laborCost / revenue : 0,
-    weeklyBudget: roundTo(
-      rows.reduce((a, r) => a + r.forecast.weeklyBudget, 0),
+    weeklyTarget: roundTo(
+      rows.reduce((a, r) => a + r.forecast.weeklyTarget, 0),
     ),
     weeklyForecast: roundTo(
       rows.reduce((a, r) => a + r.forecast.weeklyForecast, 0),

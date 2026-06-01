@@ -69,8 +69,8 @@ export default function BusinessLocationsPage() {
                   value: `${(groupForecast.laborRatio * 100).toFixed(1)}%`,
                 },
                 {
-                  label: "Weekly budget",
-                  value: eur(groupForecast.weeklyBudget),
+                  label: "Weekly baseline",
+                  value: eur(groupForecast.weeklyTarget),
                 },
                 {
                   label: "Weekly forecast",

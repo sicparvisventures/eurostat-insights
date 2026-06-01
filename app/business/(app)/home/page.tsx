@@ -38,7 +38,7 @@ export default function BusinessHomePage() {
   if (!hydrated) return null;
   if (!active || !forecast) return <OnboardPrompt />;
 
-  const budgetGap = forecast.weeklyForecast - forecast.weeklyBudget;
+  const weeklyGap = forecast.weeklyForecast - forecast.weeklyTarget;
   const kpis = [
     {
       label: "Forecast today",
@@ -60,10 +60,10 @@ export default function BusinessHomePage() {
       sub: `${forecast.laborHours}h planned`,
     },
     {
-      label: "Budget gap (wk)",
-      value: eur(budgetGap),
-      sub: `${forecast.budgetProgressPct}% achieved`,
-      tone: budgetGap >= 0 ? ("good" as const) : ("bad" as const),
+      label: "Weekly lift",
+      value: eur(weeklyGap),
+      sub: `${forecast.weeklyDeltaPct > 0 ? "+" : ""}${forecast.weeklyDeltaPct}% vs baseline`,
+      tone: weeklyGap >= 0 ? ("good" as const) : ("bad" as const),
     },
   ];
 
@@ -145,9 +145,9 @@ export default function BusinessHomePage() {
           <div>
             <SectionTitle title="Budget" />
             <BudgetProgress
-              achieved={forecast.weeklyAchieved}
-              budget={forecast.weeklyBudget}
+              target={forecast.weeklyTarget}
               forecast={forecast.weeklyForecast}
+              deltaPct={forecast.weeklyDeltaPct}
             />
           </div>
         </section>
