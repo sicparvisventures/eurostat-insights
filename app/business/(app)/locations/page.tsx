@@ -16,6 +16,7 @@ import {
   ForecastDateControl,
   todayInputValue,
 } from "@/components/business/forecast-date-control";
+import { BelgiumLocationMap } from "@/components/business/belgium-location-map";
 import {
   KpiGrid,
   SectionTitle,
@@ -96,43 +97,54 @@ export default function BusinessLocationsPage() {
         )}
 
         {sorted.length > 0 && (
-          <section>
-            <SectionTitle title="Revenue by location · today" />
-            <Card className="space-y-3 p-4">
-              {sorted.map((row) => (
-                <button
-                  key={row.id}
-                  onClick={() => setActive(row.id)}
-                  className="block w-full text-left"
-                >
-                  <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        row.id === activeId && "text-primary",
-                      )}
-                    >
-                      {row.name}
-                    </span>
-                    <span className="tabular-nums">
-                      {eur(row.forecast.revenue)}{" "}
-                      <span className="text-muted-foreground">
-                        · {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
-                        {row.forecast.deltaVsNormalPct}%
+          <section className="grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <SectionTitle title="Revenue by location · focus day" />
+              <Card className="space-y-3 p-4">
+                {sorted.map((row) => (
+                  <button
+                    key={row.id}
+                    onClick={() => setActive(row.id)}
+                    className="block w-full text-left"
+                  >
+                    <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          row.id === activeId && "text-primary",
+                        )}
+                      >
+                        {row.name}
                       </span>
-                    </span>
-                  </div>
-                  <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-                    <div
-                      className="bg-primary h-full rounded-full"
-                      style={{
-                        width: `${Math.max((row.forecast.revenue / max) * 100, 3)}%`,
-                      }}
-                    />
-                  </div>
-                </button>
-              ))}
-            </Card>
+                      <span className="tabular-nums">
+                        {eur(row.forecast.revenue)}{" "}
+                        <span className="text-muted-foreground">
+                          · {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
+                          {row.forecast.deltaVsNormalPct}%
+                        </span>
+                      </span>
+                    </div>
+                    <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+                      <div
+                        className="bg-primary h-full rounded-full"
+                        style={{
+                          width: `${Math.max((row.forecast.revenue / max) * 100, 3)}%`,
+                        }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </Card>
+            </div>
+            <div>
+              <SectionTitle title="Location map" />
+              <BelgiumLocationMap
+                locations={locations}
+                forecasts={groupForecast.byLocation}
+                activeId={activeId}
+                onSelect={setActive}
+              />
+            </div>
           </section>
         )}
 

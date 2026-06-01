@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cityCoordinates } from "@/lib/business/cities";
 
 // Open-Meteo is free and keyless. Cache an hour, serve stale for a day.
 export const revalidate = 3600;
@@ -44,17 +45,29 @@ export async function GET(request: Request) {
     country === "EL" ? "GR" : country === "UK" ? "GB" : country;
 
   try {
-    const geoUrl = `${GEOCODE}?name=${encodeURIComponent(city)}&count=1&language=en&format=json${
-      geoCountry ? `&country=${encodeURIComponent(geoCountry)}` : ""
-    }`;
-    const geoRes = await fetch(geoUrl, { next: { revalidate: 86400 } });
-    const geo = await geoRes.json();
-    const place = geo?.results?.[0];
+    const known = country ? cityCoordinates(country, city) : null;
+    let place = known
+      ? {
+          name: city,
+          country_code: geoCountry ?? country,
+          latitude: known.lat,
+          longitude: known.lon,
+        }
+      : null;
+
     if (!place) {
-      return NextResponse.json(
-        { error: `Could not locate "${city}".` },
-        { status: 404 },
-      );
+      const geoUrl = `${GEOCODE}?name=${encodeURIComponent(city)}&count=1&language=en&format=json${
+        geoCountry ? `&country=${encodeURIComponent(geoCountry)}` : ""
+      }`;
+      const geoRes = await fetch(geoUrl, { next: { revalidate: 86400 } });
+      const geo = await geoRes.json();
+      place = geo?.results?.[0];
+      if (!place) {
+        return NextResponse.json(
+          { error: `Could not locate "${city}".` },
+          { status: 404 },
+        );
+      }
     }
 
     const fc = new URLSearchParams({
