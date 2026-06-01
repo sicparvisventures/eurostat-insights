@@ -12,6 +12,11 @@ import {
   LocationSliders,
 } from "@/components/business/location-form";
 import {
+  dateFromInput,
+  ForecastDateControl,
+  todayInputValue,
+} from "@/components/business/forecast-date-control";
+import {
   KpiGrid,
   SectionTitle,
   eur,
@@ -37,7 +42,9 @@ export default function BusinessLocationsPage() {
   const removeLocation = useBusinessStore((s) => s.removeLocation);
   const duplicateLocation = useBusinessStore((s) => s.duplicateLocation);
   const ctx = useBusinessContext(group.country);
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex);
+  const [forecastDate, setForecastDate] = useState(() => todayInputValue());
+  const focusDate = dateFromInput(forecastDate);
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
 
   const [adding, setAdding] = useState(false);
 
@@ -57,6 +64,12 @@ export default function BusinessLocationsPage() {
       />
 
       <div className="space-y-7 px-5 pt-2">
+        <ForecastDateControl
+          value={forecastDate}
+          onChange={setForecastDate}
+          compact
+        />
+
         {locations.length > 0 && (
           <section>
             <SectionTitle title="Group today" />

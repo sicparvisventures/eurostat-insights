@@ -24,6 +24,11 @@ import {
   useBusinessStore,
 } from "@/lib/store/business";
 import { useGroupForecast, useLocationForecast } from "@/lib/business/use-forecast";
+import {
+  dateFromInput,
+  ForecastDateControl,
+  todayInputValue,
+} from "@/components/business/forecast-date-control";
 import { buildBriefing } from "@/lib/business/forecast";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +40,17 @@ export default function BusinessHomePage() {
   const setActive = useBusinessStore((s) => s.setActiveLocation);
   const group = useBusinessStore((s) => s.group);
   const [scope, setScope] = useState<HomeScope>("all");
+  const [forecastDate, setForecastDate] = useState(() => todayInputValue());
+  const focusDate = dateFromInput(forecastDate);
   const active =
     scope === "all"
       ? null
       : (locations.find((location) => location.id === scope) ?? null);
 
-  const { forecast, weather, ctx } = useLocationForecast(active);
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex);
+  const { forecast, weather, ctx } = useLocationForecast(active, {
+    date: focusDate,
+  });
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
 
   if (!hydrated) return null;
   if (!locations.length) return <OnboardPrompt />;
@@ -144,6 +153,11 @@ export default function BusinessHomePage() {
             if (value !== "all") setActive(value);
           }}
           options={locationOptions}
+        />
+        <ForecastDateControl
+          value={forecastDate}
+          onChange={setForecastDate}
+          compact
         />
 
         {isAll ? (

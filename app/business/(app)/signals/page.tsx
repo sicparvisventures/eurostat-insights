@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { AppHeader } from "@/components/shell/app-header";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,11 @@ import {
   SectionTitle,
   WeatherStrip,
 } from "@/components/business/business-widgets";
+import {
+  dateFromInput,
+  ForecastDateControl,
+  todayInputValue,
+} from "@/components/business/forecast-date-control";
 import { BUSINESS_SIGNAL_SOURCES, SOURCE_HEALTH } from "@/lib/business/signals";
 import {
   useActiveLocation,
@@ -24,7 +30,11 @@ export default function BusinessSignalsPage() {
   const locations = useBusinessStore((s) => s.locations);
   const setActive = useBusinessStore((s) => s.setActiveLocation);
   const active = useActiveLocation();
-  const { forecast, weather, ctx } = useLocationForecast(active);
+  const [forecastDate, setForecastDate] = useState(() => todayInputValue());
+  const focusDate = dateFromInput(forecastDate);
+  const { forecast, weather, ctx } = useLocationForecast(active, {
+    date: focusDate,
+  });
 
   if (!hydrated) return null;
   if (!active || !forecast) {
@@ -94,6 +104,11 @@ export default function BusinessSignalsPage() {
             options={locations.map((l) => ({ value: l.id, label: l.name }))}
           />
         )}
+        <ForecastDateControl
+          value={forecastDate}
+          onChange={setForecastDate}
+          compact
+        />
 
         <section>
           <SectionTitle title="Today's demand drivers" />

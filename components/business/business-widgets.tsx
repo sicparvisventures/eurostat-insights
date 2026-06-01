@@ -213,27 +213,43 @@ export function DaypartBars({ dayparts }: { dayparts: DaypartForecast[] }) {
 export function HourlyCurve({ hourly }: { hourly: HourPoint[] }) {
   const max = Math.max(...hourly.map((h) => h.revenue), 1);
   return (
-    <Card className="p-4">
-      <div className="space-y-2">
-        {hourly.map((h) => (
-          <div
-            key={h.hour}
-            className="grid grid-cols-[44px_1fr_64px] items-center gap-3 text-sm"
-          >
-            <span className="text-muted-foreground font-mono text-xs">
-              {h.hour}
-            </span>
-            <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-              <div
-                className="bg-primary h-full rounded-full"
-                style={{ width: `${Math.max((h.revenue / max) * 100, 3)}%` }}
-              />
+    <Card className="overflow-hidden p-4">
+      <div className="no-scrollbar -mx-2 overflow-x-auto px-2">
+        <div
+          className="flex min-w-[620px] items-end gap-2"
+          style={{ height: 220 }}
+          aria-label="Hourly revenue curve"
+        >
+          {hourly.map((h) => (
+            <div
+              key={h.hour}
+              className="flex h-full flex-1 flex-col justify-end gap-2"
+            >
+              <div className="flex min-h-9 items-end justify-center">
+                <span className="text-[11px] font-semibold tabular-nums">
+                  {eur(h.revenue)}
+                </span>
+              </div>
+              <div className="bg-muted relative flex flex-1 items-end overflow-hidden rounded-t-xl rounded-b-md">
+                <div
+                  className="bg-primary w-full rounded-t-xl transition-all"
+                  style={{
+                    height: `${Math.max((h.revenue / max) * 100, 5)}%`,
+                  }}
+                  title={`${h.hour}: ${eur(h.revenue)}`}
+                />
+              </div>
+              <span className="text-muted-foreground text-center font-mono text-[11px]">
+                {h.hour.slice(0, 2)}
+              </span>
             </div>
-            <span className="text-right font-semibold tabular-nums">
-              {eur(h.revenue)}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+      <div className="text-muted-foreground mt-3 flex justify-between px-1 text-[11px]">
+        <span>12:00</span>
+        <span>Revenue by hour</span>
+        <span>23:00</span>
       </div>
     </Card>
   );

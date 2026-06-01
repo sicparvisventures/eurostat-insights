@@ -19,6 +19,11 @@ import {
   WeekBars,
 } from "@/components/business/business-widgets";
 import {
+  dateFromInput,
+  ForecastDateControl,
+  todayInputValue,
+} from "@/components/business/forecast-date-control";
+import {
   useActiveLocation,
   useBusinessHasHydrated,
   useBusinessStore,
@@ -39,8 +44,10 @@ export default function BusinessForecastPage() {
 
   const [scenario, setScenario] = useState<WeatherScenario>("live");
   const [eventBoost, setEventBoost] = useState(0);
+  const [forecastDate, setForecastDate] = useState(() => todayInputValue());
+  const focusDate = dateFromInput(forecastDate);
 
-  const override: Partial<ForecastModifiers> = {};
+  const override: Partial<ForecastModifiers> = { date: focusDate };
   if (scenario === "sunny") override.weather = SUNNY;
   if (scenario === "rainy") override.weather = RAINY;
   if (eventBoost > 0) override.eventUplift = eventBoost / 100;
@@ -71,6 +78,10 @@ export default function BusinessForecastPage() {
             options={locations.map((l) => ({ value: l.id, label: l.name }))}
           />
         )}
+        <ForecastDateControl
+          value={forecastDate}
+          onChange={setForecastDate}
+        />
 
         {/* Scenario planner */}
         <section>

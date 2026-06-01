@@ -10,6 +10,10 @@ import {
 import { useWeather, useBusinessContext } from "./context";
 import type { LocationConfig } from "@/lib/store/business";
 
+function inputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 /**
  * Full forecast for one location: config + live weather + Eurostat season +
  * simulated event uplift. `override` lets the Forecast page run what-if scenarios.
@@ -24,9 +28,13 @@ export function useLocationForecast(
   const overrideKey = JSON.stringify(override);
   const forecast = useMemo(() => {
     if (!loc) return null;
-    const date = new Date();
+    const date = override.date ?? new Date();
+    const weatherForDate =
+      "weather" in override
+        ? override.weather
+        : (weather.data?.days.find((d) => d.date === inputDate(date)) ?? null);
     return computeForecast(loc, {
-      weather: weather.data?.today ?? null,
+      weather: weatherForDate,
       seasonIndex: ctx.seasonIndex,
       eventUplift: simulatedEventUplift(loc, date),
       date,
@@ -45,17 +53,19 @@ export function useLocationForecast(
 export function useGroupForecast(
   locations: LocationConfig[],
   seasonIndex: number,
+  date = new Date(),
 ) {
+  const dateTime = date.getTime();
   return useMemo(() => {
-    const date = new Date();
+    const focusDate = new Date(dateTime);
     const rows = locations.map((location) => ({
       location,
       forecast: computeForecast(location, {
         seasonIndex,
-        eventUplift: simulatedEventUplift(location, date),
-        date,
+        eventUplift: simulatedEventUplift(location, focusDate),
+        date: focusDate,
       }),
     }));
     return computeGroupForecast(rows);
-  }, [locations, seasonIndex]);
+  }, [locations, seasonIndex, dateTime]);
 }
