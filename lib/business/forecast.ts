@@ -333,22 +333,48 @@ export function buildBriefing(
 ): string {
   const dinner = f.dayparts.find((d) => d.id === "dinner")!;
   const lunch = f.dayparts.find((d) => d.id === "lunch")!;
+  const focus = f.week.find((d) => d.isFocus);
+  const weekGap = f.weeklyForecast - f.weeklyTarget;
+  const strongest = [...f.week]
+    .filter((d) => d.open)
+    .sort((a, b) => b.revenue - a.revenue)[0];
   const lead =
     f.deltaVsNormalPct >= 8
-      ? `${loc.name || "This site"} is set up for a strong day — demand reads ${f.demandBand} and sits clearly above a normal ${WEEKDAYS[mondayIndex(new Date())]}.`
+      ? `${loc.name || "This site"} is set up for a strong ${f.focusWeekday}: demand reads ${f.demandBand} and sits ${f.deltaVsNormalPct}% above setup baseline.`
       : f.deltaVsNormalPct <= -8
-        ? `${loc.name || "This site"} looks softer than normal today, so steer from control rather than chasing volume.`
-        : `${loc.name || "This site"} should land close to a normal day, so keep the operation clean and predictable.`;
+        ? `${loc.name || "This site"} looks softer on ${f.focusWeekday}, so steer from control rather than chasing volume.`
+        : `${loc.name || "This site"} should land close to baseline on ${f.focusWeekday}, so keep the operation clean and predictable.`;
+  const week =
+    f.weeklyDeltaPct >= 3
+      ? `The week is ${f.weeklyDeltaPct}% above baseline (${weekGap >= 0 ? "+" : ""}€${Math.abs(weekGap).toLocaleString("en-GB")}), with ${strongest?.weekday ?? f.focusWeekday} carrying the largest expected revenue.`
+      : f.weeklyDeltaPct <= -3
+        ? `The week is ${Math.abs(f.weeklyDeltaPct)}% below baseline (€${Math.abs(weekGap).toLocaleString("en-GB")} short), so protect labour and stock before adding capacity.`
+        : `The week is close to baseline; use the focus day signal to tune staffing rather than rewriting the whole rota.`;
   const block =
     dinner.revenue >= lunch.revenue
-      ? `Dinner carries the weight (€${dinner.revenue.toLocaleString("en-GB")} of the day), so keep prep short and only add pace when guest flow is clearly visible.`
-      : `Lunch is the bigger block today, so front-load prep and keep the turn fast.`;
+      ? `Dinner carries the focus day (€${dinner.revenue.toLocaleString("en-GB")}), so keep prep tight and add pace only when guest flow is visible.`
+      : `Lunch is the bigger focus-day block, so front-load prep and keep the turn fast.`;
   const labor = `Labour lands at ${(f.laborRatio * 100).toFixed(1)}% with about ${f.laborHours}h planned; productivity is €${f.productivity}/h.`;
+  const event =
+    f.modifiers.event >= 8
+      ? `Event pressure adds ${f.modifiers.event}% demand; watch walk-in spikes around the peak daypart.`
+      : f.modifiers.event >= 3
+        ? `Events add a modest ${f.modifiers.event}% lift.`
+        : "Event pressure is limited in this scenario.";
+  const season =
+    f.modifiers.season >= 8
+      ? `Seasonality is supportive at +${f.modifiers.season}%.`
+      : f.modifiers.season <= -8
+        ? `Seasonality is soft at ${f.modifiers.season}%.`
+        : "Seasonality is near average.";
   const weather =
     f.modifiers.weather >= 4
       ? "Weather is working for the terrace — push outdoor inflow and door visibility."
       : f.modifiers.weather <= -4
         ? "Weather is a drag on walk-in, so protect the inside path and lean on delivery."
-        : "Weather is roughly neutral today.";
-  return `${lead} ${block} ${labor} ${weather}`;
+        : "Weather is roughly neutral for the selected focus day.";
+  const focusText = focus
+    ? `Focus day baseline is €${focus.baseline.toLocaleString("en-GB")} vs forecast €${focus.revenue.toLocaleString("en-GB")}.`
+    : "";
+  return `${lead} ${week} ${focusText} ${block} ${labor} ${season} ${event} ${weather}`;
 }

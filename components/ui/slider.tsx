@@ -27,6 +27,7 @@ export function Slider({
   hint?: string;
   className?: string;
 }) {
+  const pct = max === min ? 0 : ((value - min) / (max - min)) * 100;
   return (
     <div className={className}>
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
@@ -46,6 +47,9 @@ export function Slider({
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={label}
         className={cn("ei-range")}
+        style={{
+          background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${pct}%, var(--color-muted) ${pct}%, var(--color-muted) 100%)`,
+        }}
       />
       {hint && (
         <p className="text-muted-foreground/70 mt-1 text-[11px] leading-snug">
