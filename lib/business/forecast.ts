@@ -26,6 +26,8 @@ export interface ForecastModifiers {
   eventUplift?: number;
   /** Override the day being forecast (defaults to now). */
   date?: Date;
+  /** Apply the outside intelligence to every open day in the displayed week. */
+  applyToWeek?: boolean;
 }
 
 export interface DaypartForecast {
@@ -229,13 +231,15 @@ export function computeForecast(
     };
   });
 
-  // Week pattern. Baseline = setup estimate (season + weekday). The focus day
-  // additionally carries the outside intelligence (weather + events).
+  // Week pattern. Baseline = setup estimate (season + weekday). By default the
+  // focus day carries outside intelligence; scenario/week views can apply it
+  // to every open day to model the whole forecast week.
   const open = (i: number) => i < loc.openDays;
   const week: DayForecast[] = WEEKDAYS.map((wd, i) => {
     const isFocus = i === todayIdx;
     const baseCombined = WEEKDAY_MULT[i] * season;
-    const fcCombined = baseCombined * (isFocus ? wFactor * event : 1);
+    const intelligentDay = mods.applyToWeek || isFocus;
+    const fcCombined = baseCombined * (intelligentDay ? wFactor * event : 1);
     return {
       weekday: wd,
       index: i,
@@ -340,10 +344,10 @@ export function buildBriefing(
     .sort((a, b) => b.revenue - a.revenue)[0];
   const lead =
     f.deltaVsNormalPct >= 8
-      ? `${loc.name || "This site"} is set up for a strong ${f.focusWeekday}: demand reads ${f.demandBand} and sits ${f.deltaVsNormalPct}% above setup baseline.`
+      ? `${loc.name || "This site"} is set up for a stronger forecast week; the selected focus day reads ${f.demandBand} and sits ${f.deltaVsNormalPct}% above setup baseline.`
       : f.deltaVsNormalPct <= -8
-        ? `${loc.name || "This site"} looks softer on ${f.focusWeekday}, so steer from control rather than chasing volume.`
-        : `${loc.name || "This site"} should land close to baseline on ${f.focusWeekday}, so keep the operation clean and predictable.`;
+        ? `${loc.name || "This site"} has a softer forecast week signal, so steer from control rather than chasing volume.`
+        : `${loc.name || "This site"} should land close to weekly baseline, so keep the operation clean and predictable.`;
   const week =
     f.weeklyDeltaPct >= 3
       ? `The week is ${f.weeklyDeltaPct}% above baseline (${weekGap >= 0 ? "+" : ""}€${Math.abs(weekGap).toLocaleString("en-GB")}), with ${strongest?.weekday ?? f.focusWeekday} carrying the largest expected revenue.`
@@ -374,7 +378,7 @@ export function buildBriefing(
         ? "Weather is a drag on walk-in, so protect the inside path and lean on delivery."
         : "Weather is roughly neutral for the selected focus day.";
   const focusText = focus
-    ? `Focus day baseline is €${focus.baseline.toLocaleString("en-GB")} vs forecast €${focus.revenue.toLocaleString("en-GB")}.`
+    ? `The selected day inside the week is €${focus.revenue.toLocaleString("en-GB")} versus €${focus.baseline.toLocaleString("en-GB")} baseline.`
     : "";
   return `${lead} ${week} ${focusText} ${block} ${labor} ${season} ${event} ${weather}`;
 }

@@ -46,8 +46,11 @@ export default function BusinessSignalsPage() {
   const ctx = useBusinessContext(active?.country ?? group.country);
   const { forecast, weather } = useLocationForecast(active, {
     date: focusDate,
+    applyToWeek: true,
   });
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate, {
+    applyToWeek: true,
+  });
 
   if (!hydrated) return null;
   if (!locations.length) {
@@ -66,7 +69,7 @@ export default function BusinessSignalsPage() {
   const weatherDay = weather.data?.days.find((d) => d.date === forecastDate) ?? weather.data?.today;
   const aggregateModifiers = groupForecast.byLocation.length
     ? {
-        weather: 0,
+        weather: null,
         season: Math.round((ctx.seasonIndex - 1) * 100),
         weekday: Math.round(
           groupForecast.byLocation.reduce(
@@ -81,7 +84,7 @@ export default function BusinessSignalsPage() {
           ) / groupForecast.byLocation.length,
         ),
       }
-    : { weather: 0, season: 0, weekday: 0, event: 0 };
+    : { weather: null, season: 0, weekday: 0, event: 0 };
   const activeForecast = scope === "all" ? null : forecast;
   const modifiers = activeForecast?.modifiers ?? aggregateModifiers;
   const signals = [
@@ -91,7 +94,7 @@ export default function BusinessSignalsPage() {
       unit: "% demand",
       explanation:
         scope === "all"
-          ? "Portfolio weather is shown per location; connect city-level forecasts by selecting a site."
+          ? "Portfolio weather is evaluated per city. Select a location to see the Open-Meteo forecast for that site."
           : weatherDay
             ? `${weatherDay.summary}, ${Math.round(weatherDay.tempMax)}° and ${weatherDay.precipitation.toFixed(1)} mm shape terrace and walk-in.`
             : "Live weather unavailable for this city.",
@@ -155,7 +158,7 @@ export default function BusinessSignalsPage() {
         />
 
         <section>
-          <SectionTitle title="Focus-day demand drivers" />
+          <SectionTitle title="Forecast-week demand drivers" />
           <div className="divide-border overflow-hidden rounded-2xl border bg-card">
             {signals.map((s) => (
               <div key={s.name} className="border-border border-b p-4 last:border-0">
@@ -172,7 +175,7 @@ export default function BusinessSignalsPage() {
         </section>
 
         <section>
-          <SectionTitle title="7-day weather outlook" />
+          <SectionTitle title="Forecast-week location signals" />
           {scope === "all" ? (
             <PortfolioSignalTable locations={groupForecast.byLocation} />
           ) : weather.data?.days?.length ? (
@@ -268,13 +271,13 @@ function PortfolioSignalTable({
     name: string;
     forecast: {
       demandBand: string;
-      deltaVsNormalPct: number;
+      weeklyDeltaPct: number;
       modifiers: { event: number; weekday: number; season: number; weather: number };
     };
   }[];
 }) {
   const rows = [...locations].sort(
-    (a, b) => a.forecast.deltaVsNormalPct - b.forecast.deltaVsNormalPct,
+    (a, b) => a.forecast.weeklyDeltaPct - b.forecast.weeklyDeltaPct,
   );
   return (
     <Card className="divide-border divide-y p-0">
@@ -293,11 +296,11 @@ function PortfolioSignalTable({
           <span
             className={cn(
               "text-sm font-bold tabular-nums",
-              row.forecast.deltaVsNormalPct >= 0 ? "text-success" : "text-danger",
+              row.forecast.weeklyDeltaPct >= 0 ? "text-success" : "text-danger",
             )}
           >
-            {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
-            {row.forecast.deltaVsNormalPct}%
+            {row.forecast.weeklyDeltaPct > 0 ? "+" : ""}
+            {row.forecast.weeklyDeltaPct}%
           </span>
         </div>
       ))}

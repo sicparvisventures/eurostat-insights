@@ -25,13 +25,16 @@ function weekRange(value: string) {
   start.setDate(focus.getDate() - day);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  return `${start.toLocaleDateString("en-GB", {
+  return {
+    from: start.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
-  })} - ${end.toLocaleDateString("en-GB", {
+    }),
+    to: end.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
-  })}`;
+    }),
+  };
 }
 
 export function ForecastDateControl({
@@ -43,13 +46,14 @@ export function ForecastDateControl({
   onChange: (value: string) => void;
   compact?: boolean;
 }) {
+  const range = weekRange(value);
   return (
     <Card className="p-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold">Forecast week</p>
           <p className="text-muted-foreground text-xs">
-            {weekRange(value)} · focus day{" "}
+            From {range.from} to {range.to} · focus day{" "}
             {dateFromInput(value).toLocaleDateString("en-GB", {
               weekday: compact ? "short" : "long",
               day: "numeric",
@@ -89,7 +93,7 @@ export function ForecastDateControl({
             size="sm"
             onClick={() => onChange(todayInputValue())}
           >
-            Today
+            This week
           </Button>
         </div>
       </div>

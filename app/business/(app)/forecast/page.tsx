@@ -12,7 +12,6 @@ import { Icon } from "@/components/ui/icon";
 import {
   BudgetProgress,
   DaypartBars,
-  ForecastHero,
   HourlyCurve,
   SectionTitle,
   ShiftLaborBars,
@@ -49,18 +48,18 @@ type ForecastScope = "all" | string;
 type ForecastView = "day" | "week" | "month";
 
 const SUNNY = {
-  tempMax: 25,
-  tempMin: 15,
+  tempMax: 28,
+  tempMin: 18,
   precipitation: 0,
-  windSpeed: 10,
-  summary: "Clear",
+  windSpeed: 8,
+  summary: "Sunny scenario",
 };
 const RAINY = {
-  tempMax: 14,
-  tempMin: 9,
-  precipitation: 9,
-  windSpeed: 26,
-  summary: "Rain",
+  tempMax: 10,
+  tempMin: 6,
+  precipitation: 18,
+  windSpeed: 34,
+  summary: "Rainy scenario",
 };
 
 export default function BusinessForecastPage() {
@@ -86,13 +85,21 @@ export default function BusinessForecastPage() {
         null);
   const ctx = useBusinessContext(selectedLocation?.country ?? group.country);
 
-  const override: Partial<ForecastModifiers> = { date: focusDate };
+  const override: Partial<ForecastModifiers> = {
+    date: focusDate,
+    applyToWeek: true,
+  };
   if (scenario === "sunny") override.weather = SUNNY;
   if (scenario === "rainy") override.weather = RAINY;
   if (eventBoost > 0) override.eventUplift = eventBoost / 100;
 
   const { forecast } = useLocationForecast(selectedLocation, override);
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
+  const groupForecast = useGroupForecast(
+    locations,
+    ctx.seasonIndex,
+    focusDate,
+    override,
+  );
   const week = useMemo(
     () =>
       scope === "all"
@@ -103,6 +110,11 @@ export default function BusinessForecastPage() {
   const [selectedDayIndex, setSelectedDayIndex] = useState(
     (focusDate.getDay() + 6) % 7,
   );
+  function changeForecastDate(value: string) {
+    const date = dateFromInput(value);
+    setForecastDate(value);
+    setSelectedDayIndex((date.getDay() + 6) % 7);
+  }
   const selectedDay = week.find((day) => day.index === selectedDayIndex) ?? week[0];
   const monthDays = useMemo(
     () =>
@@ -155,7 +167,7 @@ export default function BusinessForecastPage() {
           }}
           options={locationOptions}
         />
-        <ForecastDateControl value={forecastDate} onChange={setForecastDate} />
+        <ForecastDateControl value={forecastDate} onChange={changeForecastDate} />
 
         <ScenarioPlanner
           scenario={scenario}
@@ -167,15 +179,14 @@ export default function BusinessForecastPage() {
         {scope === "all" ? (
           <PortfolioForecastHero
             groupName={group.name || "All locations"}
-            revenue={groupForecast.revenue}
-            covers={groupForecast.covers}
+            revenue={groupForecast.weeklyForecast}
+            covers={weeklyCovers(groupForecast.byLocation)}
             weeklyDelta={weeklyDelta}
             locationCount={locations.length}
           />
         ) : selectedLocation && forecast ? (
-          <ForecastHero
+          <WeekOperatingHero
             title={selectedLocation.name}
-            subtitle="Focus day · operating forecast"
             forecast={forecast}
             briefing={buildBriefing(selectedLocation, forecast)}
           />
@@ -246,7 +257,7 @@ export default function BusinessForecastPage() {
             anchor={focusDate}
             days={monthDays}
             selectedDate={forecastDate}
-            onSelectDate={setForecastDate}
+            onSelectDate={changeForecastDate}
           />
         )}
       </div>
@@ -340,7 +351,7 @@ function PortfolioForecastHero({
   return (
     <Card className="p-5">
       <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
-        Focus day · portfolio forecast
+        Week · portfolio forecast
       </p>
       <div className="mt-2 flex flex-wrap items-end gap-3">
         <h1 className="text-4xl font-bold tracking-tight tabular-nums">
@@ -358,6 +369,45 @@ function PortfolioForecastHero({
       </div>
       <p className="text-muted-foreground mt-1 text-sm">
         {groupName} · {locationCount} locations · {covers} covers
+      </p>
+    </Card>
+  );
+}
+
+function WeekOperatingHero({
+  title,
+  forecast,
+  briefing,
+}: {
+  title: string;
+  forecast: NonNullable<ReturnType<typeof computeForecast>>;
+  briefing: string;
+}) {
+  const gap = forecast.weeklyForecast - forecast.weeklyTarget;
+  return (
+    <Card className="p-5">
+      <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
+        Week · operating forecast
+      </p>
+      <div className="mt-2 flex flex-wrap items-end gap-3">
+        <h1 className="text-4xl font-bold tracking-tight tabular-nums">
+          {eur(forecast.weeklyForecast)}
+        </h1>
+        <span
+          className={cn(
+            "mb-1.5 text-xs font-semibold",
+            forecast.weeklyDeltaPct >= 0 ? "text-success" : "text-danger",
+          )}
+        >
+          {forecast.weeklyDeltaPct > 0 ? "+" : ""}
+          {forecast.weeklyDeltaPct}% week vs baseline
+        </span>
+      </div>
+      <p className="text-muted-foreground mt-1 text-sm">
+        {title} · {weekCovers(forecast)} covers · gap {eur(gap)}
+      </p>
+      <p className="text-foreground/90 mt-4 text-sm leading-relaxed">
+        {briefing}
       </p>
     </Card>
   );
@@ -462,6 +512,16 @@ function aggregateWeek(weeks: DayForecast[][]): DayForecast[] {
       open: rows.some((row) => row.open),
     };
   });
+}
+
+function weekCovers(forecast: ReturnType<typeof computeForecast>) {
+  return forecast.week.reduce((sum, day) => sum + day.covers, 0);
+}
+
+function weeklyCovers(
+  locations: { forecast: ReturnType<typeof computeForecast> }[],
+) {
+  return locations.reduce((sum, row) => sum + weekCovers(row.forecast), 0);
 }
 
 function buildMonthDays({

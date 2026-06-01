@@ -45,16 +45,18 @@ export default function BusinessLocationsPage() {
   const ctx = useBusinessContext(group.country);
   const [forecastDate, setForecastDate] = useState(() => todayInputValue());
   const focusDate = dateFromInput(forecastDate);
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate, {
+    applyToWeek: true,
+  });
 
   const [adding, setAdding] = useState(false);
 
   if (!hydrated) return null;
 
   const sorted = [...groupForecast.byLocation].sort(
-    (a, b) => b.forecast.revenue - a.forecast.revenue,
+    (a, b) => b.forecast.weeklyForecast - a.forecast.weeklyForecast,
   );
-  const max = Math.max(...sorted.map((r) => r.forecast.revenue), 1);
+  const max = Math.max(...sorted.map((r) => r.forecast.weeklyForecast), 1);
 
   return (
     <div>
@@ -73,11 +75,14 @@ export default function BusinessLocationsPage() {
 
         {locations.length > 0 && (
           <section>
-            <SectionTitle title="Group today" />
+            <SectionTitle title="Group week" />
             <KpiGrid
               items={[
-                { label: "Forecast revenue", value: eur(groupForecast.revenue) },
-                { label: "Covers", value: `${groupForecast.covers}` },
+                { label: "Forecast week", value: eur(groupForecast.weeklyForecast) },
+                {
+                  label: "Week covers",
+                  value: `${groupForecast.byLocation.reduce((sum, row) => sum + row.forecast.week.reduce((total, day) => total + day.covers, 0), 0)}`,
+                },
                 {
                   label: "Labour ratio",
                   value: `${(groupForecast.laborRatio * 100).toFixed(1)}%`,
@@ -99,7 +104,7 @@ export default function BusinessLocationsPage() {
         {sorted.length > 0 && (
           <section className="grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
-              <SectionTitle title="Revenue by location · focus day" />
+              <SectionTitle title="Revenue by location · week" />
               <Card className="space-y-3 p-4">
                 {sorted.map((row) => (
                   <button
@@ -117,10 +122,10 @@ export default function BusinessLocationsPage() {
                         {row.name}
                       </span>
                       <span className="tabular-nums">
-                        {eur(row.forecast.revenue)}{" "}
+                        {eur(row.forecast.weeklyForecast)}{" "}
                         <span className="text-muted-foreground">
-                          · {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
-                          {row.forecast.deltaVsNormalPct}%
+                          · {row.forecast.weeklyDeltaPct > 0 ? "+" : ""}
+                          {row.forecast.weeklyDeltaPct}%
                         </span>
                       </span>
                     </div>
@@ -128,7 +133,7 @@ export default function BusinessLocationsPage() {
                       <div
                         className="bg-primary h-full rounded-full"
                         style={{
-                          width: `${Math.max((row.forecast.revenue / max) * 100, 3)}%`,
+                          width: `${Math.max((row.forecast.weeklyForecast / max) * 100, 3)}%`,
                         }}
                       />
                     </div>
@@ -184,8 +189,8 @@ export default function BusinessLocationsPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
-                    <Mini label="Today" value={eur(row.forecast.revenue)} />
-                    <Mini label="Covers" value={`${row.forecast.covers}`} />
+                    <Mini label="Week" value={eur(row.forecast.weeklyForecast)} />
+                    <Mini label="Covers" value={`${weekCovers(row.forecast)}`} />
                     <Mini
                       label="Labour"
                       value={`${(row.forecast.laborRatio * 100).toFixed(0)}%`}
@@ -305,4 +310,8 @@ function Mini({ label, value }: { label: string; value: string }) {
       <p className="font-semibold tabular-nums">{value}</p>
     </div>
   );
+}
+
+function weekCovers(forecast: { week: { covers: number }[] }) {
+  return forecast.week.reduce((sum, day) => sum + day.covers, 0);
 }

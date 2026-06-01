@@ -54,8 +54,10 @@ export function useGroupForecast(
   locations: LocationConfig[],
   seasonIndex: number,
   date = new Date(),
+  override: Partial<ForecastModifiers> = {},
 ) {
   const dateTime = date.getTime();
+  const overrideKey = JSON.stringify(override);
   return useMemo(() => {
     const focusDate = new Date(dateTime);
     const rows = locations.map((location) => ({
@@ -64,8 +66,10 @@ export function useGroupForecast(
         seasonIndex,
         eventUplift: simulatedEventUplift(location, focusDate),
         date: focusDate,
+        ...override,
       }),
     }));
     return computeGroupForecast(rows);
-  }, [locations, seasonIndex, dateTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations, seasonIndex, dateTime, overrideKey]);
 }

@@ -10,12 +10,9 @@ import { ChipBar } from "@/components/ui/chip-bar";
 import { Icon } from "@/components/ui/icon";
 import {
   BudgetProgress,
-  DaypartBars,
-  ForecastHero,
   KpiGrid,
   MiniStat,
   SectionTitle,
-  WeatherStrip,
   WeekBars,
   eur,
 } from "@/components/business/business-widgets";
@@ -29,7 +26,7 @@ import {
   ForecastDateControl,
   todayInputValue,
 } from "@/components/business/forecast-date-control";
-import { buildBriefing } from "@/lib/business/forecast";
+import type { LocationForecast } from "@/lib/business/forecast";
 import { cn } from "@/lib/utils";
 
 type HomeScope = "all" | string;
@@ -47,10 +44,13 @@ export default function BusinessHomePage() {
       ? null
       : (locations.find((location) => location.id === scope) ?? null);
 
-  const { forecast, weather, ctx } = useLocationForecast(active, {
+  const { forecast, ctx } = useLocationForecast(active, {
     date: focusDate,
+    applyToWeek: true,
   });
-  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate);
+  const groupForecast = useGroupForecast(locations, ctx.seasonIndex, focusDate, {
+    applyToWeek: true,
+  });
 
   if (!hydrated) return null;
   if (!locations.length) return <OnboardPrompt />;
@@ -71,11 +71,11 @@ export default function BusinessHomePage() {
   const kpis = isAll
     ? [
         {
-          label: "Forecast today",
-          value: eur(groupForecast.revenue),
-          sub: `${locations.length} locations · ${groupForecast.covers} covers`,
+          label: "Forecast week",
+          value: eur(groupForecast.weeklyForecast),
+          sub: `${locations.length} locations · ${weeklyCovers(groupForecast.byLocation)} covers`,
         },
-        { label: "Covers", value: `${groupForecast.covers}` },
+        { label: "Week covers", value: `${weeklyCovers(groupForecast.byLocation)}` },
         { label: "Avg ticket", value: eur(groupForecast.avgTicket) },
         {
           label: "Labour ratio",
@@ -95,17 +95,17 @@ export default function BusinessHomePage() {
     : selectedForecast
       ? [
     {
-      label: "Forecast today",
-      value: eur(selectedForecast.revenue),
-      sub: `${selectedForecast.deltaVsNormalPct > 0 ? "+" : ""}${selectedForecast.deltaVsNormalPct}% vs normal`,
+      label: "Forecast week",
+      value: eur(selectedForecast.weeklyForecast),
+      sub: `${selectedForecast.weeklyDeltaPct > 0 ? "+" : ""}${selectedForecast.weeklyDeltaPct}% vs baseline`,
       tone:
-        selectedForecast.deltaVsNormalPct > 0
+        selectedForecast.weeklyDeltaPct > 0
           ? ("good" as const)
-          : selectedForecast.deltaVsNormalPct < 0
+          : selectedForecast.weeklyDeltaPct < 0
             ? ("bad" as const)
             : undefined,
     },
-    { label: "Covers", value: `${selectedForecast.covers}` },
+    { label: "Week covers", value: `${weekCovers(selectedForecast)}` },
     { label: "Avg ticket", value: eur(selectedForecast.avgTicket) },
     { label: "Productivity", value: `${eur(selectedForecast.productivity)}/h` },
     {
@@ -165,18 +165,17 @@ export default function BusinessHomePage() {
             groupName={group.name || "All locations"}
             country={group.country}
             locationCount={locations.length}
-            revenue={groupForecast.revenue}
-            covers={groupForecast.covers}
+            revenue={groupForecast.weeklyForecast}
+            covers={weeklyCovers(groupForecast.byLocation)}
             avgTicket={groupForecast.avgTicket}
             weeklyDeltaPct={groupWeeklyDeltaPct}
             briefing={districtBriefing(group.name, groupForecast.byLocation)}
           />
         ) : selectedLocation && selectedForecast ? (
-          <ForecastHero
+          <WeekForecastHero
             title={selectedLocation.name}
-            subtitle="Today · operating forecast"
+            country={selectedLocation.country}
             forecast={selectedForecast}
-            briefing={buildBriefing(selectedLocation, selectedForecast)}
           />
         ) : null}
 
@@ -187,11 +186,11 @@ export default function BusinessHomePage() {
 
         <section className="grid gap-3 lg:grid-cols-2">
           <div>
-            <SectionTitle title="Today's weather" />
+            <SectionTitle title="Week attention" />
             {isAll ? (
               <DistrictAttention locations={groupForecast.byLocation} />
             ) : (
-              <WeatherStrip weather={weather.data?.today ?? null} />
+              <LocationWeekDrivers forecast={selectedForecast} />
             )}
           </div>
           <div>
@@ -222,13 +221,6 @@ export default function BusinessHomePage() {
             </Card>
           </div>
         </section>
-
-        {!isAll && selectedForecast && (
-          <section>
-            <SectionTitle title="Daypart demand" href="/business/forecast" />
-            <DaypartBars dayparts={selectedForecast.dayparts} />
-          </section>
-        )}
 
         <section className="grid gap-3 lg:grid-cols-2">
           <div>
@@ -285,7 +277,7 @@ function GroupForecastHero({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
-            Today · district forecast
+            Week · district forecast
           </p>
           <div className="mt-2 flex flex-wrap items-end gap-3">
             <h1 className="text-4xl font-bold tracking-tight tabular-nums">
@@ -321,16 +313,78 @@ function GroupForecastHero({
   );
 }
 
+function WeekForecastHero({
+  title,
+  country,
+  forecast,
+}: {
+  title: string;
+  country: string;
+  forecast: LocationForecast;
+}) {
+  const gap = forecast.weeklyForecast - forecast.weeklyTarget;
+  return (
+    <section className="border-border bg-card rounded-2xl border p-5">
+      <p className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
+        Week · operating forecast
+      </p>
+      <div className="mt-2 flex flex-wrap items-end gap-3">
+        <h1 className="text-4xl font-bold tracking-tight tabular-nums">
+          {eur(forecast.weeklyForecast)}
+        </h1>
+        <span
+          className={cn(
+            "mb-1.5 text-xs font-semibold tabular-nums",
+            forecast.weeklyDeltaPct >= 0 ? "text-success" : "text-danger",
+          )}
+        >
+          {forecast.weeklyDeltaPct > 0 ? "+" : ""}
+          {forecast.weeklyDeltaPct}% vs baseline
+        </span>
+      </div>
+      <p className="text-muted-foreground mt-1 text-sm">
+        {title} · {country} · {weekCovers(forecast)} covers
+      </p>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+        <MiniStat label="Baseline" value={eur(forecast.weeklyTarget)} />
+        <MiniStat label="Gap" value={eur(gap)} />
+        <MiniStat label="Focus day" value={forecast.focusWeekday} />
+      </div>
+    </section>
+  );
+}
+
+function LocationWeekDrivers({
+  forecast,
+}: {
+  forecast: LocationForecast | null;
+}) {
+  if (!forecast) return null;
+  return (
+    <Card className="p-4">
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <MiniStat label="Weather" value={`${pct(forecast.modifiers.weather)}`} />
+        <MiniStat label="Season" value={`${pct(forecast.modifiers.season)}`} />
+        <MiniStat label="Weekday" value={`${pct(forecast.modifiers.weekday)}`} />
+        <MiniStat label="Event" value={`${pct(forecast.modifiers.event)}`} />
+      </div>
+      <p className="text-muted-foreground mt-3 text-xs">
+        These outside signals are applied to the selected forecast week.
+      </p>
+    </Card>
+  );
+}
+
 function districtBriefing(
   groupName: string,
-  locations: { name: string; forecast: { revenue: number; deltaVsNormalPct: number; demandBand: string } }[],
+  locations: { name: string; forecast: LocationForecast }[],
 ) {
   const sorted = [...locations].sort(
-    (a, b) => a.forecast.deltaVsNormalPct - b.forecast.deltaVsNormalPct,
+    (a, b) => a.forecast.weeklyDeltaPct - b.forecast.weeklyDeltaPct,
   );
-  const soft = sorted.filter((row) => row.forecast.deltaVsNormalPct < 0).slice(0, 3);
+  const soft = sorted.filter((row) => row.forecast.weeklyDeltaPct < 0).slice(0, 3);
   const hot = [...locations]
-    .sort((a, b) => b.forecast.deltaVsNormalPct - a.forecast.deltaVsNormalPct)
+    .sort((a, b) => b.forecast.weeklyDeltaPct - a.forecast.weeklyDeltaPct)
     .slice(0, 2);
   const name = groupName || "The district";
   if (soft.length) {
@@ -342,17 +396,17 @@ function districtBriefing(
 function DistrictAttention({
   locations,
 }: {
-  locations: { id: string; name: string; forecast: { revenue: number; deltaVsNormalPct: number; demandBand: string } }[];
+  locations: { id: string; name: string; forecast: LocationForecast }[];
 }) {
   const rows = [...locations]
-    .sort((a, b) => a.forecast.deltaVsNormalPct - b.forecast.deltaVsNormalPct)
+    .sort((a, b) => a.forecast.weeklyDeltaPct - b.forecast.weeklyDeltaPct)
     .slice(0, 4);
 
   return (
     <Card className="p-4">
       <div className="space-y-3">
         {rows.map((row) => {
-          const leaking = row.forecast.deltaVsNormalPct < 0;
+          const leaking = row.forecast.weeklyDeltaPct < 0;
           return (
             <div key={row.id} className="flex items-center gap-3">
               <div
@@ -378,8 +432,8 @@ function DistrictAttention({
                   leaking ? "text-danger" : "text-success",
                 )}
               >
-                {row.forecast.deltaVsNormalPct > 0 ? "+" : ""}
-                {row.forecast.deltaVsNormalPct}%
+                {row.forecast.weeklyDeltaPct > 0 ? "+" : ""}
+                {row.forecast.weeklyDeltaPct}%
               </span>
             </div>
           );
@@ -395,10 +449,12 @@ function DistrictAttention({
 function RevenueByLocation({
   locations,
 }: {
-  locations: { id: string; name: string; forecast: { revenue: number; covers: number; deltaVsNormalPct: number } }[];
+  locations: { id: string; name: string; forecast: LocationForecast }[];
 }) {
-  const rows = [...locations].sort((a, b) => b.forecast.revenue - a.forecast.revenue);
-  const max = Math.max(...rows.map((row) => row.forecast.revenue), 1);
+  const rows = [...locations].sort(
+    (a, b) => b.forecast.weeklyForecast - a.forecast.weeklyForecast,
+  );
+  const max = Math.max(...rows.map((row) => row.forecast.weeklyForecast), 1);
 
   return (
     <Card className="space-y-3 p-4">
@@ -407,9 +463,9 @@ function RevenueByLocation({
           <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
             <span className="font-semibold">{row.name}</span>
             <span className="tabular-nums">
-              {eur(row.forecast.revenue)}{" "}
+              {eur(row.forecast.weeklyForecast)}{" "}
               <span className="text-muted-foreground">
-                · {row.forecast.covers} covers
+                · {weekCovers(row.forecast)} covers
               </span>
             </span>
           </div>
@@ -417,7 +473,7 @@ function RevenueByLocation({
             <div
               className="bg-primary h-full rounded-full"
               style={{
-                width: `${Math.max((row.forecast.revenue / max) * 100, 4)}%`,
+                width: `${Math.max((row.forecast.weeklyForecast / max) * 100, 4)}%`,
               }}
             />
           </div>
@@ -434,6 +490,20 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="font-semibold tabular-nums">{value}</span>
     </div>
   );
+}
+
+function weekCovers(forecast: LocationForecast) {
+  return forecast.week.reduce((sum, day) => sum + day.covers, 0);
+}
+
+function weeklyCovers(
+  locations: { forecast: LocationForecast }[],
+) {
+  return locations.reduce((sum, row) => sum + weekCovers(row.forecast), 0);
+}
+
+function pct(value: number) {
+  return `${value > 0 ? "+" : ""}${value}%`;
 }
 
 function OnboardPrompt() {
