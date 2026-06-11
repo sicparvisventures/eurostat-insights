@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import {
+  describeError,
+  fetchUpstream,
+  isTimeoutError,
+} from "@/lib/eurostat/upstream";
 
 const BASE =
   "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data";
 
 // Cache upstream responses for an hour; serve stale for a day.
 export const revalidate = 3600;
+
+// Leave room for the retry/backoff schedule in fetchUpstream.
+export const maxDuration = 60;
 
 /**
  * Thin caching proxy to the Eurostat dissemination API.
@@ -33,9 +41,9 @@ export async function GET(request: Request) {
   const url = `${BASE}/${encodeURIComponent(dataset)}?${upstream.toString()}`;
 
   try {
-    const res = await fetch(url, {
-      next: { revalidate },
-      headers: { Accept: "application/json" },
+    const res = await fetchUpstream(url, {
+      revalidate,
+      accept: "application/json",
     });
 
     if (!res.ok) {
@@ -49,6 +57,7 @@ export async function GET(request: Request) {
       } catch {
         // Keep the status-based fallback if Eurostat does not return JSON.
       }
+      console.error(`eurostat/data upstream ${res.status} for ${url}`);
       return NextResponse.json(
         { error: detail },
         { status: res.status === 404 ? 404 : 502 },
@@ -62,10 +71,11 @@ export async function GET(request: Request) {
           "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
       },
     });
-  } catch {
+  } catch (err) {
+    console.error(`eurostat/data fetch failed for ${url}: ${describeError(err)}`);
     return NextResponse.json(
       { error: "Failed to reach Eurostat." },
-      { status: 504 },
+      { status: isTimeoutError(err) ? 504 : 502 },
     );
   }
 }
